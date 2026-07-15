@@ -1,7 +1,12 @@
 .DS_Store
-.env
+.env*
+!.env.example
 .venv/
 .venv-mac/
+node_modules/
+coverage/
+dist/
+npm-debug.log*
 .pytest_cache/
 __pycache__/
 *.py[cod]

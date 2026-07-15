@@ -1,18 +1,114 @@
 # Clay Screen
 
-Turn a shared screen, camera, or video into a handmade world—locally on an
-Apple Silicon Mac.
+Turn a screen, camera, or video into a responsive handmade world with
+[FLUX.2 [klein] Realtime](https://fal.ai/models/fal-ai/flux-2/klein/realtime).
 
 ![Clay Screen interface](assets/clay-screen-poster.svg)
 
-[Try the interface demo](https://evnsnclr.github.io/clay-screen/) ·
-[Read the research notes](RESEARCH_AND_BUILD_PLAN.md)
+[Interface preview](https://evnsnclr.github.io/clay-screen/) ·
+[Research and build notes](RESEARCH_AND_BUILD_PLAN.md) ·
+[Validation receipt](VALIDATION.md)
 
-The hosted page is an interface preview and does **not** run AI. Clone the repo
-to run real SD-Turbo image-to-image diffusion through Apple's Metal/MPS
-backend. Screen capture and inference stay on your Mac.
+The GitHub Pages site is strictly an **interface preview** and never runs AI.
+Real FLUX.2 generation is localhost-only: clone the repository and use your own
+fal key. Clay Screen does not operate an owner-funded public inference endpoint.
 
-## Run on a Mac
+## Real FLUX.2 demo
+
+[![Actual FLUX.2 Clay Screen result](assets/flux2-smoke-result.jpg)](assets/clay-screen-demo.mp4)
+
+Click the image to watch the actual 13-second browser capture from the bounded
+release test. One Video + Clay session produced 49 generated frames before the
+15-second safety cap, with a final reported round-trip of 271 ms and no browser
+console errors. At the listed rate, the session's maximum estimated cost was
+about $0.029.
+
+This proves the live pipeline and the tactile clay treatment. It is not a claim
+of exact parity with the inspiration: the validation source was effectively
+static, small generated text is less stable, and the original demo presents a
+more cohesive full-screen transformation. See the [validation receipt](VALIDATION.md)
+for the direct comparison.
+
+## Run the FLUX.2 demo locally
+
+Requirements:
+
+- Python 3.10 or newer
+- macOS or Linux shell (the quickstart is not tested on native Windows)
+- a [fal API key](https://fal.ai/dashboard/keys) with available balance
+- current Chrome or Safari
+
+```bash
+git clone https://github.com/evnsnclr/clay-screen.git
+cd clay-screen
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-local.txt
+cp .env.example .env.local
+chmod 600 .env.local
+```
+
+Put your own key and a private local access code in `.env.local`:
+
+```dotenv
+FAL_KEY=your_api_scoped_fal_key
+CLAY_SCREEN_ACCESS_CODE=choose_a_private_local_code
+```
+
+Then run:
+
+```bash
+./run_demo.sh
+```
+
+Open [http://127.0.0.1:7860](http://127.0.0.1:7860), enter the same access
+code, choose **Screen**, **Camera**, or **Video**, and press
+**Start transforming**. `.env.local` is ignored by Git and the fal key remains
+server-side.
+
+The access code protects the local token endpoint; it is not an account system
+or a hard spending limit. A connection that produces no first frame stops after
+10 seconds, and a normal FLUX.2 session stops after 15 seconds. A user or
+modified client can immediately start another, so keep a small fal balance and
+review the billing controls available to your account.
+
+On July 15, 2026, fal listed this endpoint at **$0.00194 per compute-second**.
+A continuously billed 15-second session would cost about **$0.029**. Check the
+[current model page](https://fal.ai/models/fal-ai/flux-2/klein/realtime) before
+running it.
+
+## What leaves the device
+
+The localhost app resizes selected browser-capture frames and sends them
+directly to fal over a realtime WebSocket. fal returns generated frames for the
+browser to draw and optionally record. The local FastAPI server supplies only a
+short-lived, endpoint-scoped token; it does not proxy the image stream.
+
+Treat screen sharing as disclosure to a third-party processor. Do not select a
+window containing private information, and review
+[fal's payload documentation](https://fal.ai/docs/documentation/model-apis/inference/payloads)
+before use.
+
+## How it works
+
+```text
+browser-approved screen, camera, or video
+        │ resized JPEG frames
+        ▼
+fal realtime WebSocket → FLUX.2 [klein] → generated canvas
+        ▲
+localhost token endpoint + your own FAL_KEY
+```
+
+The browser keeps only one fresh frame in flight, uses a fixed seed and output
+feedback for continuity, and closes the connection on Stop, error, page exit,
+or the 15-second cap.
+
+## Optional private Mac fallback
+
+The existing SD-Turbo path runs entirely on an Apple Silicon Mac. It is slower
+and substantially less faithful than FLUX.2, but requires no cloud key and sends
+no frames off-device.
 
 Requirements:
 
@@ -22,103 +118,44 @@ Requirements:
 - about 6 GB free for the one-time model download
 
 ```bash
-git clone https://github.com/evnsnclr/clay-screen.git
-cd clay-screen
 ./setup_mac.sh
 ./run_mac.sh
 ```
 
-Open [http://127.0.0.1:7860](http://127.0.0.1:7860), choose **Screen**,
-**Camera**, or **Video**, then click **Start transforming**.
-
-The first generated frame downloads SD-Turbo and TAESD and warms the pipeline,
-so it can take a few minutes. Later launches reuse the Hugging Face cache.
-
-## What it includes
-
-- Browser-native screen, camera, and uploaded-video capture
-- Clay, felt, ink, and dream prompt presets
-- A simple faithful-to-generated blend control
-- Local SD-Turbo + StreamDiffusion inference through PyTorch MPS
-- Backpressure: only one fresh frame is processed at a time
-- A browser-only 10-second recording button
-- A static interface preview that can live on GitHub Pages
-- No frontend build step, account, API key, or paid GPU
-
-Clay Screen uses 512×288 inputs and a two-timestep StreamDiffusion batch. On a
-Mac this is interactive, but it should not be confused with the much higher
-frame rates reported for CUDA/TensorRT systems. The interface displays the
-measured time for every generated frame.
-
-On the development Mac (`Mac16,5`, 48 GB), four warm-cache server requests took
-103–136 ms for the model call. See the reproducible [validation receipt](VALIDATION.md);
-performance will vary across Macs.
-
-## How it works
-
-```text
-approved browser capture
-        │ newest JPEG only
-        ▼
-local FastAPI endpoint
-        │
-        ▼
-SD-Turbo + StreamDiffusion + TAESD
-        │ Apple Metal / MPS
-        ▼
-generated JPEG → canvas → optional 10s recording
-```
-
-The model is loaded lazily on the first frame. Prompt changes reuse the loaded
-pipeline and refresh its text embedding. The transformation slider blends the
-source and generated image; it does not rebuild the live denoising schedule.
-
-## Privacy
-
-- Your browser always shows its own screen-sharing picker.
-- Clay Screen binds to `127.0.0.1` by default.
-- In Mac mode, captured frames do not leave your computer.
-- The app does not intentionally save source or generated frames.
-- The browser saves a file only when you press **Record 10s**.
-- Avoid sharing windows containing private information anyway.
+Open [http://127.0.0.1:7860](http://127.0.0.1:7860). The first generated frame
+downloads SD-Turbo and TAESD and warms the pipeline; later launches reuse the
+Hugging Face cache. The local path uses 512×288 inputs and a two-timestep
+StreamDiffusion batch through PyTorch MPS. On the development Mac (`Mac16,5`,
+48 GB), warm model calls took 103–136 ms; performance varies by Mac. Leave
+`FAL_KEY` and `CLAY_SCREEN_ACCESS_CODE` blank when you want this path selected.
 
 ## Interface-only preview
 
-Anyone can inspect the UI without installing model dependencies:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements-local.txt
-./run_preview.sh
-```
-
-Preview mode uses a labeled browser effect. It is not presented as diffusion.
+The public GitHub Pages URL uses a labeled browser effect. It cannot mint a fal
+token, never sends frames to fal, and is not presented as AI diffusion.
 
 ## Development
 
 ```bash
 pip install -r requirements-dev.txt
+npm ci
 pytest -q
-node --check static/app.js
+npm run check
+npm test
 ```
 
-The Mac dependency pins include one deliberate override: the upstream macOS
-fork declares Transformers 4.35.2, but Diffusers 0.33.1 imports newer SigLIP
-APIs. This project installs Transformers 4.48.3, verified against the local
-pipeline.
+These checks use mocks and never perform paid inference. The real-service gate
+and one bounded paid smoke test are recorded in [VALIDATION.md](VALIDATION.md).
 
-## Models, licenses, and attribution
+## Licenses and attribution
 
-Clay Screen's code is Apache-2.0 licensed. It installs the Apache-2.0
-[StreamDiffusion macOS fork](https://github.com/patrickhartono/StreamDiffusion-Mac)
-at a fixed commit and uses
-[SD-Turbo](https://huggingface.co/stabilityai/sd-turbo) plus
-[TAESD](https://huggingface.co/madebyollin/taesd). Model weights are downloaded
-separately and retain their own licenses. Review the SD-Turbo license before
-commercial use.
+Clay Screen code is Apache-2.0 licensed. FLUX.2 mode uses the MIT-licensed,
+pinned `@fal-ai/client`, fal's hosted service, and FLUX.2 [klein] from Black
+Forest Labs; their terms apply separately. The optional Mac path installs
+StreamDiffusion-Mac, SD-Turbo, and TAESD, whose licenses also remain separate.
+See [NOTICE](NOTICE).
 
 The visual direction was inspired by
 [Ryan Stephen's realtime diffusion UI experiment](https://x.com/Ryan__Stephen/status/2066890410824528077).
-This is an independent implementation; the post did not publish its underlying
-code or model configuration.
+Clay Screen is an independent implementation and does not reproduce the
+original project's unpublished code or configuration.

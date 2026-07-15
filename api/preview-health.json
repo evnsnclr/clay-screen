@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "default_runtime": "preview",
+  "runtimes": {
+    "cloud": { "available": false },
+    "local": { "available": false },
+    "preview": { "available": true }
+  }
+}

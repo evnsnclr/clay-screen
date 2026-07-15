@@ -1,4 +1,4 @@
-"""Clay Screen: local screen-to-diffusion for Apple Silicon Macs."""
+"""Clay Screen: FLUX.2 realtime with an optional Apple Silicon fallback."""
 
 from __future__ import annotations
 
@@ -6,29 +6,40 @@ import json
 import os
 from pathlib import Path
 import re
+import secrets
 import tempfile
 
+import httpx
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
+ASSETS_DIR = BASE_DIR / "assets"
 BACKEND = os.getenv("CLAY_SCREEN_BACKEND", "preview").strip().lower()
 MAC_ENABLED = BACKEND in {"mac", "mps"}
 MAX_FRAME_BYTES = 2_500_000
 SESSION_ID_PATTERN = re.compile(r"^[0-9a-f-]{36}$")
 RUNTIME_DIR = Path(tempfile.gettempdir()) / "clay-screen"
 RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+FAL_REALTIME_APP = "fal-ai/flux-2/klein/realtime"
+FAL_TOKEN_ENDPOINT = "https://rest.fal.ai/tokens/realtime"
+FAL_TOKEN_SECONDS = 120
 
 
 class SessionConfig(BaseModel):
     session_id: str = Field(min_length=36, max_length=36)
     prompt: str = Field(min_length=1, max_length=600)
-    strength: float = Field(ge=0.55, le=0.95)
+    strength: float = Field(ge=0.55, le=1.0)
+
+
+class FalTokenRequest(BaseModel):
+    app: str = Field(min_length=1, max_length=100)
+    accessCode: str = Field(min_length=1, max_length=300)
 
 
 def _validated_session_id(value: str) -> str:
@@ -53,8 +64,29 @@ def _read_config(session_id: str) -> SessionConfig:
     return SessionConfig(**data)
 
 
+def _cloud_available() -> bool:
+    return bool(
+        os.getenv("FAL_KEY", "").strip()
+        and os.getenv("CLAY_SCREEN_ACCESS_CODE", "").strip()
+    )
+
+
 app = FastAPI(title="Clay Screen", docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
+
+
+@app.middleware("http")
+async def disable_sensitive_response_caching(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path in {"/api/health", "/api/fal/realtime-token"}:
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@app.get("/api/preview-health.json", include_in_schema=False)
+async def preview_health():
+    return FileResponse(BASE_DIR / "api" / "preview-health.json")
 
 if MAC_ENABLED:
     from mac_runtime import MacDiffusionEngine
@@ -71,20 +103,118 @@ async def home():
 
 @app.get("/api/health")
 async def health():
-    if ENGINE is not None:
-        return {
-            "ok": True,
-            "backend": "streamdiffusion-mac",
-            "inference": True,
-            **ENGINE.status(),
-        }
-    return {
+    cloud_available = _cloud_available()
+    local_available = ENGINE is not None
+    local_status = ENGINE.status() if ENGINE is not None else {}
+    if cloud_available:
+        default_runtime = "cloud"
+    elif local_available:
+        default_runtime = "local"
+    else:
+        default_runtime = "preview"
+
+    payload = {
         "ok": True,
-        "backend": "preview",
-        "inference": False,
-        "device": "browser",
-        "model_loaded": False,
+        "default_runtime": default_runtime,
+        "runtimes": {
+            "cloud": {
+                "available": cloud_available,
+                "model": FAL_REALTIME_APP,
+                "token_endpoint": "api/fal/realtime-token",
+                "access_code_required": True,
+            },
+            "local": {
+                "available": local_available,
+                "backend": "streamdiffusion-mac" if local_available else None,
+                **local_status,
+            },
+            "preview": {"available": True},
+        },
     }
+    return JSONResponse(payload, headers={"Cache-Control": "no-store"})
+
+
+@app.post("/api/fal/realtime-token")
+async def fal_realtime_token(token_request: FalTokenRequest):
+    fal_key = os.getenv("FAL_KEY", "").strip()
+    expected_code = os.getenv("CLAY_SCREEN_ACCESS_CODE", "")
+
+    if not fal_key or not expected_code:
+        return JSONResponse(
+            {"error": "Cloud inference is not configured"},
+            status_code=503,
+            headers={"Cache-Control": "no-store"},
+        )
+    if token_request.app != FAL_REALTIME_APP:
+        return JSONResponse(
+            {"error": "Model is not allowed"},
+            status_code=403,
+            headers={"Cache-Control": "no-store"},
+        )
+    if not secrets.compare_digest(
+        token_request.accessCode.encode("utf-8"),
+        expected_code.encode("utf-8"),
+    ):
+        return JSONResponse(
+            {"error": "Access denied"},
+            status_code=401,
+            headers={"Cache-Control": "no-store"},
+        )
+
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            upstream = await client.post(
+                FAL_TOKEN_ENDPOINT,
+                headers={
+                    "Authorization": f"Key {fal_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "app": FAL_REALTIME_APP,
+                    "allowed_apps": [FAL_REALTIME_APP],
+                    "duration": FAL_TOKEN_SECONDS,
+                },
+            )
+    except httpx.HTTPError as error:
+        return JSONResponse(
+            {"error": "Could not create a realtime token"},
+            status_code=502,
+            headers={"Cache-Control": "no-store"},
+        )
+
+    try:
+        payload = upstream.json()
+    except ValueError as error:
+        return JSONResponse(
+            {"error": "Could not create a realtime token"},
+            status_code=502,
+            headers={"Cache-Control": "no-store"},
+        )
+
+    if upstream.status_code in {401, 403}:
+        return JSONResponse(
+            {"error": "FAL rejected the token request. Check the key and account balance."},
+            status_code=502,
+            headers={"Cache-Control": "no-store"},
+        )
+
+    token = None
+    if isinstance(payload, str) and payload:
+        token = payload
+    elif isinstance(payload, dict) and isinstance(payload.get("token"), str):
+        token = payload["token"]
+
+    if not upstream.is_success or not token:
+        return JSONResponse(
+            {"error": "Could not create a realtime token"},
+            status_code=502,
+            headers={"Cache-Control": "no-store"},
+        )
+
+    return JSONResponse(
+        {"token": token, "expiresIn": FAL_TOKEN_SECONDS},
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @app.post("/api/session")
