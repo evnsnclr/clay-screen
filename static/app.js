@@ -1,4 +1,5 @@
 import {
+  CLOUD_STARTUP_TIMEOUT_MS,
   CLOUD_SESSION_LIMIT_MS,
   FAL_CLIENT_URL,
   FAL_MODEL,
@@ -10,6 +11,7 @@ import {
   chooseRuntime,
   isInterfacePreviewLocation,
 } from "./flux-config.js";
+import { installFalSocketGuard } from "./fal-socket-guard.js";
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -62,6 +64,7 @@ const state = {
   inFlight: false,
   abortController: null,
   cloudConnection: null,
+  cloudAccessCode: "",
   cloudPending: null,
   cloudStartedAt: 0,
   outputQueue: [],
@@ -78,6 +81,7 @@ let sourceKind = null;
 let sourceObjectUrl = null;
 let selectedStyle = "clay";
 let sessionId = null;
+let falSocketGuard = null;
 
 async function boot() {
   state.health = await loadHealth();
@@ -132,7 +136,7 @@ function applyRuntime(mode, { announce = true } = {}) {
     outputCanvas.height = FLUX_OUTPUT_SIZE;
     runtimeBadge.textContent = "FLUX.2 · CLOUD READY";
     runtimeBadge.classList.add("is-cloud");
-    if (announce) setMessage("FLUX.2 is ready. Enter the demo code, then choose a source.");
+    if (announce) setMessage("FLUX.2 is ready on this computer. Enter your local access code, then choose a source.");
     return;
   }
 
@@ -155,7 +159,7 @@ function applyRuntime(mode, { announce = true } = {}) {
 
   runtimeBadge.textContent = "INTERFACE PREVIEW";
   if (announce) {
-    setMessage("This static page previews the interface. Deploy it with your own fal key for live FLUX.2.");
+    setMessage("This public page previews the interface only. Clone it and use your own fal key locally for live FLUX.2.");
   }
 }
 
@@ -313,22 +317,25 @@ async function requestFalToken(app, code, generation) {
 }
 
 async function startCloudSession(generation) {
-  let code = accessCode.value.trim();
-  if (!code) throw new Error("Enter the demo access code before starting FLUX.2.");
+  state.cloudAccessCode = accessCode.value.trim();
+  if (!state.cloudAccessCode) {
+    throw new Error("Enter your local access code before starting FLUX.2.");
+  }
 
   outputStatus.textContent = "connecting to FLUX.2";
   setMessage("Authorizing a short FLUX.2 session. Frames are processed by fal.ai.");
+  falSocketGuard ||= installFalSocketGuard(window);
   const { fal } = await import(FAL_CLIENT_URL);
   if (!isCurrentRun(generation)) return;
 
   const provideToken = (app) => {
-    const oneTimeCode = code;
-    code = "";
-    return requestFalToken(app, oneTimeCode, generation);
+    const oneTimeCode = state.cloudAccessCode;
+    state.cloudAccessCode = "";
+    return requestFalToken(app, oneTimeCode, state.generation);
   };
 
   state.cloudConnection = fal.realtime.connect(FAL_MODEL, {
-    connectionKey: `clay-screen-${crypto.randomUUID()}`,
+    connectionKey: "clay-screen-local",
     tokenProvider: provideToken,
     throttleInterval: 100,
     maxBuffering: 1,
@@ -340,10 +347,10 @@ async function startCloudSession(generation) {
     if (isCurrentRun(generation) && !state.firstOutput) {
       handleCloudError(new Error("FLUX.2 did not return a frame in time."), generation);
     }
-  }, 20_000);
+  }, CLOUD_STARTUP_TIMEOUT_MS);
   state.sessionTimer = setTimeout(() => {
     if (isCurrentRun(generation)) {
-      stopTransform("The 60-second cloud session ended to keep usage bounded.");
+      stopTransform("The 15-second cloud session ended to keep usage bounded.");
     }
   }, CLOUD_SESSION_LIMIT_MS);
   sendCloudFrame(generation);
@@ -564,7 +571,7 @@ async function startTransform() {
     }
     if (state.mode === "cloud" && !accessCode.value.trim()) {
       accessCode.focus();
-      throw new Error("Enter the demo access code before starting FLUX.2.");
+      throw new Error("Enter your local access code before starting FLUX.2.");
     }
 
     const generation = ++state.generation;
@@ -584,7 +591,7 @@ async function startTransform() {
     else if (state.mode === "local") await startLocalSession(generation);
     else {
       outputStatus.textContent = "interface preview · not AI";
-      setMessage("Interface preview is running. Deploy with a fal key for generated frames.");
+      setMessage("Interface preview is running without AI. Clone the repo and add your own fal key for generated frames.");
       renderPreview();
     }
   } catch (error) {
@@ -601,6 +608,7 @@ function stopTransform(message = "Transformation stopped.", tone = "normal", { s
   state.running = false;
   state.generation += 1;
   state.inFlight = false;
+  state.cloudAccessCode = "";
   state.cloudPending = null;
   state.outputQueue = [];
   state.outputBusy = false;
@@ -608,6 +616,7 @@ function stopTransform(message = "Transformation stopped.", tone = "normal", { s
   state.abortController = null;
   state.cloudConnection?.close();
   state.cloudConnection = null;
+  falSocketGuard?.closeAll();
   if (state.previewAnimation) cancelAnimationFrame(state.previewAnimation);
   state.previewAnimation = null;
   clearTimeout(state.outputTimer);

@@ -2,12 +2,7 @@
   "ok": true,
   "default_runtime": "preview",
   "runtimes": {
-    "cloud": {
-      "available": false,
-      "model": "fal-ai/flux-2/klein/realtime",
-      "token_endpoint": "api/fal/realtime-token",
-      "access_code_required": true
-    },
+    "cloud": { "available": false },
     "local": { "available": false },
     "preview": { "available": true }
   }

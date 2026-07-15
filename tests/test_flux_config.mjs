@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
+  CLOUD_STARTUP_TIMEOUT_MS,
   CLOUD_SESSION_LIMIT_MS,
   FAL_CLIENT_URL,
   FAL_MODEL,
@@ -37,7 +38,7 @@ test("GitHub Pages and an explicit preview flag skip server endpoints", () => {
     isInterfacePreviewLocation({ hostname: "127.0.0.1", search: "?preview=1" }),
     true,
   );
-  assert.equal(isInterfacePreviewLocation({ hostname: "clay-screen.vercel.app" }), false);
+  assert.equal(isInterfacePreviewLocation({ hostname: "localhost" }), false);
 });
 
 test("the browser SDK, package lock input, and attribution stay on one version", () => {
@@ -61,7 +62,8 @@ test("FLUX request uses the documented realtime settings", () => {
   assert.equal(FLUX_INPUT_SIZE, 704);
   assert.equal(FLUX_OUTPUT_SIZE, 768);
   assert.equal(FLUX_JPEG_QUALITY, 0.5);
-  assert.equal(CLOUD_SESSION_LIMIT_MS, 60_000);
+  assert.equal(CLOUD_STARTUP_TIMEOUT_MS, 10_000);
+  assert.equal(CLOUD_SESSION_LIMIT_MS, 15_000);
   assert.deepEqual(request, {
     image_url: "data:image/jpeg;base64,frame",
     prompt: "handmade clay",

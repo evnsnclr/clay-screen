@@ -163,6 +163,7 @@ async def fal_realtime_token(token_request: FalTokenRequest):
                     "Content-Type": "application/json",
                 },
                 json={
+                    "app": FAL_REALTIME_APP,
                     "allowed_apps": [FAL_REALTIME_APP],
                     "duration": FAL_TOKEN_SECONDS,
                 },
@@ -179,6 +180,13 @@ async def fal_realtime_token(token_request: FalTokenRequest):
     except ValueError as error:
         return JSONResponse(
             {"error": "Could not create a realtime token"},
+            status_code=502,
+            headers={"Cache-Control": "no-store"},
+        )
+
+    if upstream.status_code in {401, 403}:
+        return JSONResponse(
+            {"error": "FAL rejected the token request. Check the key and account balance."},
             status_code=502,
             headers={"Cache-Control": "no-store"},
         )

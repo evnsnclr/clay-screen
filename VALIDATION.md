@@ -6,45 +6,57 @@ Updated July 15, 2026.
 
 | Gate | Result |
 |---|---|
-| Python tests | pass; 10 tests |
-| JavaScript syntax and built-in tests | pass; 17 tests |
-| Mocked browser FLUX.2 stream | pass; token, capture, 38 generated frames, recording gate, Stop, and 60-second cap exercised |
-| Official fal browser client integration | pass through WebSocket construction; paid inference not attempted without a key |
-| Static GitHub Pages preview | pass; clearly labeled interface preview, preview health only, clean console |
-| Responsive layout | pass at 390 x 844 |
+| Python tests | pass; 11 tests in the current run |
+| JavaScript syntax and built-in tests | pass; 9 tests in the current local-only build |
+| Mocked browser FLUX.2 flow | pass; the earlier stream run produced 38 generated frames, and the current run exercised token exchange, cleanup, and the 15-second cap |
+| Official fal browser client integration | pass through WebSocket construction with mocked inference |
+| Static GitHub Pages preview | pass; interface-only, preview health only, clean console |
+| Responsive layout | pass at 390 × 844 |
 | Missing server key fails closed | pass |
 | Wrong access code fails closed | pass |
 | Realtime app allowlist | pass; only `fal-ai/flux-2/klein/realtime` is accepted |
+| Current fal token schema | pass; request includes both the required `app` and exact `allowed_apps` values |
 | Token response caching | pass; disabled with `Cache-Control: no-store` |
 | `FAL_KEY` in frontend or tracked environment files | pass; not present |
-| Real FLUX.2 frame stream | **not run: no `FAL_KEY` is available in this workspace** |
-| Vercel production smoke test | **not run: deployment credentials are unavailable** |
+| Real fal key authentication | pass |
+| Realtime token creation | **blocked: fal returned HTTP 403 because the account balance was exhausted** |
+| Paid FLUX.2 frames and cost | **0 frames; $0 observed cost** |
+| Visual parity with the original X demo | **unverified because no real FLUX.2 frames were produced** |
+| New 15-second session cap | pass in a mocked browser session; the connection closed and the UI returned to Start |
+| Stop during WebSocket handshake | pass; the socket guard prevents the pinned fal client from sending a queued frame after Stop |
+| Localhost-only release boundary | pass; hosted token code is removed, Pages requested preview health only, and live token exchange remained on `127.0.0.1` |
 
-The implementation can be tested safely without credentials, but it must not
-be described as production-verified until the two real-service gates pass.
+The current blocker is fal account balance, not key recognition or local token
+validation. The project must not claim real FLUX.2 visual parity until a funded,
+bounded smoke test produces actual frames.
 
-## Required real-key smoke test
+## Required bounded real-service smoke test
 
-On a private preview deployment with a small prepaid balance and the account's
-available billing controls reviewed:
+After adding a small fal balance:
 
-1. Set `FAL_KEY` and `CLAY_SCREEN_ACCESS_CODE` in Vercel.
-2. Confirm an incorrect access code returns `401` and no token.
-3. Start Screen, Camera, and Video sources and receive at least 30 generated
-   frames from each.
-4. Exercise every material preset and the transformation control.
-5. Press Stop and verify WebSocket traffic and fal usage stop immediately.
-6. Start again and verify the UI closes the session at 60 seconds.
-7. Leave the page mid-session and verify no further WebSocket traffic occurs.
-8. Confirm page source, browser storage, logs, and network responses never
-   expose `FAL_KEY`.
-9. Confirm the fal dashboard reports the expected bounded usage and cost.
-10. Check the deployed HTTPS page in current Chrome and Safari with a clean
-    console.
+1. Put the user's own `FAL_KEY` and `CLAY_SCREEN_ACCESS_CODE` in the ignored
+   `.env.local` file and run `./run_demo.sh`.
+2. Confirm the app binds to `127.0.0.1`, an incorrect access code returns `401`,
+   and the fal key never appears in page source, browser storage, or responses.
+3. Use one short **Video + Clay** session and receive at least three real frames.
+4. Press Stop as soon as the visual behavior is clear; otherwise let the
+   15-second cap close the connection.
+5. Confirm the fal dashboard reports no more than the expected bounded usage
+   and cost.
+6. Compare the captured result directly with the original X demo before making a
+   visual-parity claim.
+
+Screen, Camera, and the remaining materials are already covered by free UI or
+mocked checks. Do not spend on additional real-service combinations unless the
+first bounded Clay run reveals a specific issue that needs isolation.
+
+At the price listed on July 15, 2026, a continuously billed 15-second session is
+approximately `15 × $0.00194 = $0.0291`. Clients can restart sessions, so the cap
+does not impose a hard account-level spending limit.
 
 ## Optional local Mac fallback receipt
 
-The previous local backend was validated on an Apple Silicon Mac (`Mac16,5`,
+The private local backend was validated on an Apple Silicon Mac (`Mac16,5`,
 48 GB, macOS 15.6) with Python 3.10.16, PyTorch MPS, Diffusers 0.33.1,
 Transformers 4.48.3, and StreamDiffusion-Mac at commit `99f146e`.
 
@@ -64,15 +76,15 @@ browser drawing, and will vary across Macs.
 `transformers==4.35.2` metadata pin. The setup script intentionally installs
 the fork without dependencies and uses Transformers 4.48.3 because Diffusers
 0.33.1 imports APIs absent from 4.35.2; the generation receipt above verifies
-that combination. The cloud and CI environments do not install this fork.
+that combination. The FLUX.2 and CI environments do not install this fork.
 
 ## Free verification commands
 
 ```bash
 pytest -q
-find static api server -name '*.js' -print0 | xargs -0 -n1 node --check
-node --test tests/*.mjs
-git grep -nE 'FAL_KEY=.+|fal_key_[A-Za-z0-9]+'
+npm run check
+npm test
+git check-ignore -q .env.local
 ```
 
-CI deliberately leaves `FAL_KEY` unset and never performs paid inference.
+CI leaves `FAL_KEY` unset and never performs paid inference.

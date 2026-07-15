@@ -89,6 +89,7 @@ def test_fal_token_endpoint_scopes_the_upstream_request(monkeypatch):
 
     class FakeResponse:
         is_success = True
+        status_code = 200
 
         @staticmethod
         def json():
@@ -127,6 +128,7 @@ def test_fal_token_endpoint_scopes_the_upstream_request(monkeypatch):
     assert upstream["url"] == "https://rest.fal.ai/tokens/realtime"
     assert upstream["headers"]["Authorization"] == "Key server-only-key"
     assert upstream["json"] == {
+        "app": "fal-ai/flux-2/klein/realtime",
         "allowed_apps": ["fal-ai/flux-2/klein/realtime"],
         "duration": 120,
     }
@@ -172,3 +174,41 @@ def test_ui_contract_is_present():
     assert "FAL_MODEL" in javascript
     assert "CLAY_SCREEN" not in javascript
     assert "FAL_KEY" not in javascript
+
+
+def test_fal_token_endpoint_explains_account_rejection_without_leaking_secrets(monkeypatch):
+    class FakeResponse:
+        is_success = False
+        status_code = 403
+
+        @staticmethod
+        def json():
+            return {"detail": "billing detail"}
+
+    class FakeClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def post(self, *_args, **_kwargs):
+            return FakeResponse()
+
+    monkeypatch.setenv("FAL_KEY", "server-only-key")
+    monkeypatch.setenv("CLAY_SCREEN_ACCESS_CODE", "demo-code")
+    monkeypatch.setattr(app_module.httpx, "AsyncClient", lambda **_kwargs: FakeClient())
+
+    response = client.post(
+        "/api/fal/realtime-token",
+        json={
+            "app": "fal-ai/flux-2/klein/realtime",
+            "accessCode": "demo-code",
+        },
+    )
+
+    assert response.status_code == 502
+    assert response.json() == {
+        "error": "FAL rejected the token request. Check the key and account balance."
+    }
+    assert "server-only-key" not in response.text

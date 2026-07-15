@@ -5,7 +5,8 @@ export const FAL_CLIENT_URL =
 export const FLUX_INPUT_SIZE = 704;
 export const FLUX_OUTPUT_SIZE = 768;
 export const FLUX_JPEG_QUALITY = 0.5;
-export const CLOUD_SESSION_LIMIT_MS = 60_000;
+export const CLOUD_STARTUP_TIMEOUT_MS = 10_000;
+export const CLOUD_SESSION_LIMIT_MS = 15_000;
 
 export function chooseRuntime(health = {}) {
   const runtimes = health.runtimes || {};

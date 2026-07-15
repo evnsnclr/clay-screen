@@ -3,7 +3,6 @@
 !.env.example
 .venv/
 .venv-mac/
-.vercel/
 node_modules/
 coverage/
 dist/
