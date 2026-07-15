@@ -1,0 +1,9 @@
+Clay Screen
+Copyright 2026 Evan Smith
+
+Clay Screen integrates with StreamDiffusion-Mac, a macOS adaptation of the
+StreamDiffusion project, distributed under the Apache License 2.0:
+https://github.com/patrickhartono/StreamDiffusion-Mac
+
+The SD-Turbo and TAESD model weights are downloaded separately at runtime and
+retain their respective licenses.

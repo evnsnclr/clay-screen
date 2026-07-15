@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 788" role="img" aria-labelledby="title desc">
+  <title id="title">Clay Screen interface</title>
+  <desc id="desc">A warm cream interface showing a browser source beside a colorful clay output.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="22" stdDeviation="22" flood-color="#5f412d" flood-opacity=".18"/>
+    </filter>
+    <linearGradient id="clay" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ef8558"/>
+      <stop offset=".4" stop-color="#f4c750"/>
+      <stop offset=".68" stop-color="#65a88b"/>
+      <stop offset="1" stop-color="#7966db"/>
+    </linearGradient>
+  </defs>
+  <rect width="1400" height="788" fill="#f2e8da"/>
+  <text x="72" y="79" fill="#171714" font-family="Arial, sans-serif" font-weight="700" font-size="24">● Clay Screen</text>
+  <text x="72" y="168" fill="#171714" font-family="Georgia, serif" font-size="72">Make your screen feel handmade.</text>
+  <g transform="translate(72 222)" filter="url(#shadow)">
+    <rect width="1256" height="480" rx="34" fill="#fbf6ed"/>
+    <rect x="20" y="52" width="596" height="330" rx="25" fill="#d9cab6"/>
+    <rect x="640" y="52" width="596" height="330" rx="25" fill="#ddd5c8"/>
+    <rect x="45" y="80" width="546" height="274" rx="18" fill="#cbd7d2"/>
+    <path d="M70 295C180 220 240 328 365 208s164 22 203-74v220H70z" fill="#8ba89b" opacity=".9"/>
+    <g transform="translate(670 75)">
+      <rect width="536" height="282" rx="18" fill="#ead8c8"/>
+      <path d="M0 58C92-15 165 72 239 22s124 53 297 7v253H0z" fill="url(#clay)"/>
+      <circle cx="108" cy="107" r="45" fill="#f3b744"/>
+      <rect x="180" y="72" width="108" height="55" rx="24" fill="#6ba487" transform="rotate(-7 180 72)"/>
+      <circle cx="372" cy="173" r="68" fill="#7b68df"/>
+      <rect x="61" y="198" width="193" height="54" rx="24" fill="#ee7950" transform="rotate(5 61 198)"/>
+    </g>
+    <rect x="20" y="400" width="1216" height="60" rx="18" fill="#e7d8c6"/>
+    <rect x="35" y="414" width="215" height="32" rx="11" fill="#171714"/>
+    <circle cx="290" cy="430" r="16" fill="#ef8558"/>
+    <circle cx="332" cy="430" r="16" fill="#d6bd94"/>
+    <circle cx="374" cy="430" r="16" fill="#2e3e47"/>
+    <rect x="1015" y="411" width="205" height="38" rx="13" fill="#171714"/>
+  </g>
+</svg>

@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Turn a shared screen, camera, or video into a live claymation world."
+    />
+    <meta name="theme-color" content="#f2e8da" />
+    <title>Clay Screen — realtime diffusion</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23ec7445'/%3E%3Ccircle cx='24' cy='25' r='7' fill='%23f5c85b'/%3E%3Ccircle cx='40' cy='38' r='10' fill='%2386a96c'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="static/styles.css" />
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Clay Screen home">
+        <span class="brand-mark" aria-hidden="true">
+          <i></i><i></i><i></i>
+        </span>
+        <span>Clay Screen</span>
+      </a>
+      <div class="header-meta">
+        <span id="runtimeBadge" class="runtime-badge">checking runtime</span>
+        <a
+          class="github-link"
+          href="https://github.com/evnsnclr/clay-screen"
+          target="_blank"
+          rel="noreferrer"
+        >GitHub ↗</a>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="intro">
+        <p class="eyebrow">SCREEN → GENERATIVE VIDEO</p>
+        <h1>Make your screen<br /><em>feel handmade.</em></h1>
+        <p class="lede">
+          Share a window, choose a material, and let your Mac rebuild it with
+          a small diffusion model, frame by frame.
+        </p>
+      </section>
+
+      <section class="studio" aria-label="Clay Screen studio">
+        <div class="stage-grid">
+          <article class="stage-card input-card">
+            <div class="stage-label">
+              <span>01 / SOURCE</span>
+              <span id="sourceStatus">nothing selected</span>
+            </div>
+            <div class="media-frame" id="inputFrame">
+              <video id="inputVideo" autoplay muted playsinline loop></video>
+              <div id="inputEmpty" class="empty-state">
+                <span class="empty-orb input-orb"></span>
+                <p>Choose a screen, camera, or video</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="stage-card output-card">
+            <div class="stage-label">
+              <span>02 / OUTPUT</span>
+              <span id="outputStatus">waiting</span>
+            </div>
+            <div class="media-frame output-frame">
+              <canvas id="outputCanvas" width="832" height="480"></canvas>
+              <div id="outputEmpty" class="empty-state">
+                <span class="empty-orb output-orb"></span>
+                <p>Your transformed world appears here</p>
+              </div>
+              <div id="liveIndicator" class="live-indicator" hidden>
+                <i></i> LIVE
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="control-deck">
+          <div class="control-group source-controls">
+            <span class="control-title">Source</span>
+            <div class="segmented" role="group" aria-label="Choose source">
+              <button class="source-button" data-source="screen" type="button">Screen</button>
+              <button class="source-button" data-source="camera" type="button">Camera</button>
+              <button class="source-button" data-source="video" type="button">Video</button>
+              <input id="videoFile" type="file" accept="video/*" hidden />
+            </div>
+          </div>
+
+          <div class="control-group style-controls">
+            <span class="control-title">Material</span>
+            <div class="swatches" role="group" aria-label="Choose material">
+              <button class="style-swatch is-active" data-style="clay" type="button">
+                <i class="clay"></i><span>Clay</span>
+              </button>
+              <button class="style-swatch" data-style="felt" type="button">
+                <i class="felt"></i><span>Felt</span>
+              </button>
+              <button class="style-swatch" data-style="ink" type="button">
+                <i class="ink"></i><span>Ink</span>
+              </button>
+              <button class="style-swatch" data-style="dream" type="button">
+                <i class="dream"></i><span>Dream</span>
+              </button>
+            </div>
+          </div>
+
+          <label class="control-group strength-control" for="strength">
+            <span class="control-title">Transformation</span>
+            <div class="range-row">
+              <span>faithful</span>
+              <input id="strength" type="range" min="55" max="95" value="75" />
+              <output id="strengthValue">75%</output>
+            </div>
+          </label>
+
+          <div class="action-controls">
+            <button id="startButton" class="primary-button" type="button">
+              <span>Start transforming</span><i>↗</i>
+            </button>
+            <button id="recordButton" class="secondary-button" type="button" disabled>
+              Record 10s
+            </button>
+          </div>
+        </div>
+
+        <div class="session-row">
+          <p id="sessionMessage" role="status">
+            Pick a source to begin. Screen sharing always requires your permission.
+          </p>
+          <button id="stopSharingButton" class="text-button" type="button" hidden>
+            Stop sharing
+          </button>
+        </div>
+      </section>
+
+      <section class="notes">
+        <article>
+          <span>PRIVATE BY DEFAULT</span>
+          <p>
+            You choose exactly what to share. In Mac mode, capture and AI both
+            stay on your machine; frames are not intentionally stored. Avoid
+            windows containing private information.
+          </p>
+        </article>
+        <article>
+          <span>EXPECT IMPERFECTION</span>
+          <p>
+            Diffusion redraws rather than filters. Small text will mutate, fine
+            details will shimmer, and that handmade instability is part of the effect.
+          </p>
+        </article>
+        <article>
+          <span>OPEN SOURCE</span>
+          <p>
+            Built on StreamDiffusion for macOS and SD-Turbo. Clone the repo,
+            run it on Apple Silicon, change the materials, and make it yours.
+          </p>
+        </article>
+      </section>
+    </main>
+
+    <footer>
+      <span>CLAY SCREEN / 2026</span>
+      <span>Built by Evan Smith</span>
+    </footer>
+
+    <canvas id="captureCanvas" width="512" height="288" hidden></canvas>
+    <script type="module" src="static/app.js"></script>
+  </body>
+</html>

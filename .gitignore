@@ -1,0 +1,13 @@
+.DS_Store
+.env
+.venv/
+.venv-mac/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+.cache/
+ckpts/
+wan_models/
+recordings/
+output/
+.playwright-cli/
