@@ -1,0 +1,7 @@
+{
+  "ok": true,
+  "backend": "preview",
+  "inference": false,
+  "device": "browser",
+  "model_loaded": false
+}
