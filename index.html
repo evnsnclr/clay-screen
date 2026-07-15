@@ -8,10 +8,15 @@
       content="Turn a shared screen, camera, or video into a live claymation world."
     />
     <meta name="theme-color" content="#f2e8da" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://cdn.jsdelivr.net wss://fal.run data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
     <title>Clay Screen — realtime diffusion</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23ec7445'/%3E%3Ccircle cx='24' cy='25' r='7' fill='%23f5c85b'/%3E%3Ccircle cx='40' cy='38' r='10' fill='%2386a96c'/%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap"
       rel="stylesheet"
@@ -43,12 +48,12 @@
         <p class="eyebrow">SCREEN → GENERATIVE VIDEO</p>
         <h1>Make your screen<br /><em>feel handmade.</em></h1>
         <p class="lede">
-          Share a window, choose a material, and let your Mac rebuild it with
-          a small diffusion model, frame by frame.
+          Share a window, choose a material, and rebuild it live with FLUX.2
+          Klein—or use the optional private Mac fallback.
         </p>
       </section>
 
-      <section class="studio" aria-label="Clay Screen studio">
+      <section id="studio" class="studio" data-runtime="preview" aria-label="Clay Screen studio" aria-busy="false">
         <div class="stage-grid">
           <article class="stage-card input-card">
             <div class="stage-label">
@@ -56,7 +61,7 @@
               <span id="sourceStatus">nothing selected</span>
             </div>
             <div class="media-frame" id="inputFrame">
-              <video id="inputVideo" autoplay muted playsinline loop></video>
+              <video id="inputVideo" aria-label="Selected source" autoplay muted playsinline loop></video>
               <div id="inputEmpty" class="empty-state">
                 <span class="empty-orb input-orb"></span>
                 <p>Choose a screen, camera, or video</p>
@@ -70,7 +75,9 @@
               <span id="outputStatus">waiting</span>
             </div>
             <div class="media-frame output-frame">
-              <canvas id="outputCanvas" width="832" height="480"></canvas>
+              <canvas id="outputCanvas" width="832" height="480" aria-label="Generated output">
+                Live generated output appears here.
+              </canvas>
               <div id="outputEmpty" class="empty-state">
                 <span class="empty-orb output-orb"></span>
                 <p>Your transformed world appears here</p>
@@ -83,12 +90,17 @@
         </div>
 
         <div class="control-deck">
+          <label id="runtimeControl" class="control-group runtime-control" for="runtimeSelect" hidden>
+            <span class="control-title">Engine</span>
+            <select id="runtimeSelect" aria-label="Generation engine"></select>
+          </label>
+
           <div class="control-group source-controls">
             <span class="control-title">Source</span>
             <div class="segmented" role="group" aria-label="Choose source">
-              <button class="source-button" data-source="screen" type="button">Screen</button>
-              <button class="source-button" data-source="camera" type="button">Camera</button>
-              <button class="source-button" data-source="video" type="button">Video</button>
+              <button class="source-button" data-source="screen" type="button" aria-pressed="false">Screen</button>
+              <button class="source-button" data-source="camera" type="button" aria-pressed="false">Camera</button>
+              <button class="source-button" data-source="video" type="button" aria-pressed="false">Video</button>
               <input id="videoFile" type="file" accept="video/*" hidden />
             </div>
           </div>
@@ -96,42 +108,56 @@
           <div class="control-group style-controls">
             <span class="control-title">Material</span>
             <div class="swatches" role="group" aria-label="Choose material">
-              <button class="style-swatch is-active" data-style="clay" type="button">
+              <button class="style-swatch is-active" data-style="clay" type="button" aria-pressed="true">
                 <i class="clay"></i><span>Clay</span>
               </button>
-              <button class="style-swatch" data-style="felt" type="button">
+              <button class="style-swatch" data-style="felt" type="button" aria-pressed="false">
                 <i class="felt"></i><span>Felt</span>
               </button>
-              <button class="style-swatch" data-style="ink" type="button">
+              <button class="style-swatch" data-style="ink" type="button" aria-pressed="false">
                 <i class="ink"></i><span>Ink</span>
               </button>
-              <button class="style-swatch" data-style="dream" type="button">
+              <button class="style-swatch" data-style="dream" type="button" aria-pressed="false">
                 <i class="dream"></i><span>Dream</span>
               </button>
             </div>
           </div>
 
           <label class="control-group strength-control" for="strength">
-            <span class="control-title">Transformation</span>
+            <span class="control-title">Effect</span>
             <div class="range-row">
-              <span>faithful</span>
-              <input id="strength" type="range" min="55" max="95" value="75" />
-              <output id="strengthValue">75%</output>
+              <span>subtle</span>
+              <input id="strength" type="range" min="70" max="100" value="100" />
+              <output id="strengthValue">100%</output>
             </div>
           </label>
+
+          <form id="accessControl" class="control-group access-control" hidden>
+            <label for="accessCode">
+              <span class="control-title">Demo access code</span>
+              <input
+                id="accessCode"
+                type="password"
+                maxlength="300"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="required for cloud"
+              />
+            </label>
+          </form>
 
           <div class="action-controls">
             <button id="startButton" class="primary-button" type="button">
               <span>Start transforming</span><i>↗</i>
             </button>
-            <button id="recordButton" class="secondary-button" type="button" disabled>
+            <button id="recordButton" class="secondary-button" type="button" aria-pressed="false" disabled>
               Record 10s
             </button>
           </div>
         </div>
 
         <div class="session-row">
-          <p id="sessionMessage" role="status">
+          <p id="sessionMessage" role="status" aria-live="polite" aria-atomic="true">
             Pick a source to begin. Screen sharing always requires your permission.
           </p>
           <button id="stopSharingButton" class="text-button" type="button" hidden>
@@ -142,25 +168,24 @@
 
       <section class="notes">
         <article>
-          <span>PRIVATE BY DEFAULT</span>
+          <span>CLOUD DISCLOSURE</span>
           <p>
-            You choose exactly what to share. In Mac mode, capture and AI both
-            stay on your machine; frames are not intentionally stored. Avoid
-            windows containing private information.
+            FLUX.2 mode sends sampled frames to fal.ai for generation. Share
+            only windows you are comfortable processing in the cloud.
           </p>
         </article>
         <article>
-          <span>EXPECT IMPERFECTION</span>
+          <span>BOUNDED BY DESIGN</span>
           <p>
-            Diffusion redraws rather than filters. Small text will mutate, fine
-            details will shimmer, and that handmade instability is part of the effect.
+            Sessions stop automatically after 60 seconds. Access-code gating
+            protects the demo owner’s API credits; forks use their own fal key.
           </p>
         </article>
         <article>
           <span>OPEN SOURCE</span>
           <p>
-            Built on StreamDiffusion for macOS and SD-Turbo. Clone the repo,
-            run it on Apple Silicon, change the materials, and make it yours.
+            Built with FLUX.2 Klein Realtime through fal. The optional local
+            Mac path remains available for private, lower-fidelity experiments.
           </p>
         </article>
       </section>
@@ -171,7 +196,7 @@
       <span>Built by Evan Smith</span>
     </footer>
 
-    <canvas id="captureCanvas" width="512" height="288" hidden></canvas>
+    <canvas id="captureCanvas" width="704" height="704" hidden></canvas>
     <script type="module" src="static/app.js"></script>
   </body>
 </html>

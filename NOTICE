@@ -1,9 +1,23 @@
 Clay Screen
 Copyright 2026 Evan Smith
 
-Clay Screen integrates with StreamDiffusion-Mac, a macOS adaptation of the
-StreamDiffusion project, distributed under the Apache License 2.0:
+Cloud mode uses fal's hosted API and FLUX.2 [klein] from Black Forest Labs:
+https://fal.ai/models/fal-ai/flux-2/klein/realtime
+https://github.com/black-forest-labs/flux2
+
+FLUX.2 [klein] 4B model code and weights are published under Apache License 2.0.
+Use of fal's hosted service is also subject to fal's separate terms.
+
+The browser loads @fal-ai/client 1.10.1, distributed under the MIT License:
+https://www.npmjs.com/package/@fal-ai/client/v/1.10.1
+
+The optional local Mac mode integrates StreamDiffusion-Mac, an Apache-2.0
+adaptation of StreamDiffusion:
 https://github.com/patrickhartono/StreamDiffusion-Mac
 
-The SD-Turbo and TAESD model weights are downloaded separately at runtime and
-retain their respective licenses.
+SD-Turbo and TAESD weights are downloaded separately at runtime and retain
+their respective licenses.
+
+The visual direction was inspired by Ryan Stephen's public realtime diffusion
+UI experiment. This is an independent implementation:
+https://x.com/Ryan__Stephen/status/2066890410824528077

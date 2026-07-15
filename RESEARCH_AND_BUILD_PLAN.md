@@ -1,90 +1,89 @@
-# Recreating the realtime diffusion UI on a Mac
+# FLUX.2 realtime build plan
 
-Research updated: July 15, 2026
+Research updated July 15, 2026.
 
-## What the reference likely does
+## Reference and model choice
 
-[Ryan Stephen's post](https://x.com/Ryan__Stephen/status/2066890410824528077)
-only says “playing with realtime diffusion ui.” It does not identify the model
-or publish code. The visible behavior is consistent with image/video-to-video
-diffusion: the large layout survives while text mutates and surfaces are redrawn
-as clay.
+[Ryan Stephen's original demo](https://x.com/Ryan__Stephen/status/2066890410824528077)
+shows the behavior Clay Screen targets: browser structure survives while the
+entire surface is redrawn as a coherent tactile material. Ryan later reported
+[using fal at around 20 fps](https://x.com/Ryan__Stephen/status/2066903429881208975).
+The post does not publish its complete source or model settings, so Clay Screen
+remains an independent approximation.
 
-The simplest recreation is:
+The cloud path uses
+[`fal-ai/flux-2/klein/realtime`](https://fal.ai/models/fal-ai/flux-2/klein/realtime/api):
+a low-step FLUX.2 image-to-image endpoint with persistent WebSocket transport,
+fixed seeds, optional output feedback, and optional RIFE interpolation. It is a
+much closer fit than the earlier 512×288 SD-Turbo Mac pipeline.
 
-1. `getDisplayMedia()` captures a browser-approved screen or window.
-2. The browser sends only the newest resized frame.
-3. A low-step image-to-image pipeline redraws it from a material prompt.
-4. The generated image is painted back to a canvas and can be recorded.
+## Deliberately small architecture
 
-## Why the project now runs on Mac
+```text
+browser capture
+  → newest resized JPEG
+  → direct fal realtime WebSocket
+  → generated canvas and optional browser recording
 
-The original StreamDiffusion project documents browser screen capture and very
-high rates on an RTX 4090 with TensorRT. Those numbers do not transfer to a Mac.
-Apple does, however, provide PyTorch GPU acceleration through the Metal
-Performance Shaders (`mps`) device, and the StreamDiffusion macOS fork adapts
-its timing and image-to-image path for M1–M4 hardware.
+token endpoint (Vercel function or local FastAPI)
+  → validates shared access code and exact model name
+  → mints a short-lived fal token
+  → never receives image frames
+```
 
-Clay Screen therefore uses:
+Visible controls remain limited to source, material, transformation, start or
+stop, and recording. There is no account system, database, job queue, model
+picker, or frontend framework.
 
-- Apple Silicon + PyTorch MPS
-- SD-Turbo, a distilled one-to-four-step Stable Diffusion model
-- StreamDiffusion's streaming denoising batch
-- TAESD as the small autoencoder
-- 512×288 inputs and two selected timesteps
-- request/response backpressure instead of pretending the Mac produces 10–16 fps
+## Hosting and billing boundary
 
-Primary references:
+- **Vercel** is the canonical live deployment: it serves the static interface
+  and two small JavaScript functions under `api/`, with no frontend build.
+- **GitHub Pages** remains an explicitly labeled interface-only preview because
+  it cannot protect `FAL_KEY`.
+- **Local cloud development** runs the FastAPI mirror of the token endpoint with
+  `FAL_KEY` and `CLAY_SCREEN_ACCESS_CODE` in an ignored `.env.local` file.
+- **Local Mac mode** remains an optional private, free fallback.
 
-- [Apple: Accelerated PyTorch training on Mac](https://developer.apple.com/metal/pytorch/)
-- [StreamDiffusion](https://github.com/cumulo-autumn/StreamDiffusion)
-- [StreamDiffusion-Mac](https://github.com/patrickhartono/StreamDiffusion-Mac)
-- [SD-Turbo model card](https://huggingface.co/stabilityai/sd-turbo)
+The shared access code stops anonymous visitors from minting tokens, but anyone
+who knows it can consume the deployer's fal credits. It is intentionally simple
+and appropriate for a bounded showcase, not an open anonymous service. The UI
+ends sessions after 60 seconds, but that is not a hard billing guard. Use a
+small prepaid balance and verify the billing controls exposed by the fal
+account before sharing an owner-funded deployment.
+
+As listed on July 15, 2026, the endpoint costs $0.00194 per compute-second.
+Price and service behavior can change, so recheck them before each public demo.
+
+## Privacy boundary
+
+In cloud mode, selected frames leave the device and are processed by fal. The
+token server does not proxy or intentionally store them. The UI must disclose
+cloud processing before Start, and the deployer must keep that language aligned
+with fal's current payload-retention documentation.
+
+## Release gates
+
+- Unit tests cover missing keys, bad access codes, exact endpoint scoping, and
+  non-cacheable token responses without contacting fal.
+- Configuration tests pin the 60-second cap, and a mocked browser run exercises
+  token exchange, frame backpressure, generated output, and connection cleanup
+  without paid inference.
+- Source, build output, page source, logs, and network responses contain no
+  `FAL_KEY`.
+- A private real-key smoke test receives at least 30 frames, stops billing on
+  Stop and page exit, and matches observed use to the fal dashboard.
+- A deployed HTTPS smoke test passes in Chrome and Safari.
+
+The final two gates are currently unverified because this workspace has neither
+a fal key nor Vercel deployment credentials. See [VALIDATION.md](VALIDATION.md).
+
+## Primary references
+
+- [FLUX.2 [klein] Realtime API](https://fal.ai/models/fal-ai/flux-2/klein/realtime/api)
+- [fal realtime authentication](https://fal.ai/docs/documentation/model-apis/inference/real-time)
+- [fal payload handling](https://fal.ai/docs/documentation/model-apis/inference/payloads)
+- [Black Forest Labs FLUX.2 repository](https://github.com/black-forest-labs/flux2)
+- [Vercel Functions quickstart](https://vercel.com/docs/functions/quickstart)
 - [Browser screen capture](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia)
-
-## The bounded public version
-
-The app intentionally has five visible decisions:
-
-1. Source: screen, camera, or video
-2. Material: clay, felt, ink, or dream
-3. Transformation blend
-4. Start/stop
-5. Record 10 seconds
-
-Model selection, schedulers, seeds, graph editors, accounts, API keys, and paid
-cloud infrastructure stay out of version 1.
-
-## Honest demo boundary
-
-GitHub Pages can host the complete interface but cannot execute PyTorch. The
-public URL is therefore labeled **Interface demo** and uses a simple browser
-effect. Real diffusion starts with `./run_mac.sh` after cloning the repo.
-
-This yields a simple and durable public story:
-
-- GitHub Pages: instant visual/interaction demo
-- GitHub repository: source of truth and three-command Mac setup
-- Local Mac: actual AI, private transport, no ongoing bill
-
-The full SD-Turbo model is downloaded once to the user's Hugging Face cache.
-The model has its own Stability AI Community License; the app code and
-StreamDiffusion dependency are Apache-2.0.
-
-## Expected limitations
-
-- The first frame is slow because the weights download and the pipeline warms.
-- Apple MPS is interactive but slower than CUDA/TensorRT.
-- Small text becomes invented or unreadable.
-- Fast changes can flicker because each image is regenerated.
-- SD-Turbo works best near its preferred 512-pixel scale.
-- Browser screen sharing requires a user gesture and fresh permission.
-
-## Success criteria
-
-- A clean Apple Silicon Mac can install and launch with the documented commands.
-- Health checks report MPS availability before weights load.
-- A real input frame returns a real generated JPEG with measured latency.
-- The browser never queues multiple stale inference requests.
-- The public page never describes its CSS preview as AI.
-- No API key, captured frame, or model weight is committed to Git.
+- [Apple PyTorch acceleration](https://developer.apple.com/metal/pytorch/)
