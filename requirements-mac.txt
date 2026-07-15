@@ -1,7 +1,7 @@
 -r requirements-local.txt
 torch>=2.2
 torchvision>=0.17
-diffusers==0.33.1
+diffusers==0.39.0
 # The Mac fork still declares 4.35.2, but Diffusers 0.33 imports SigLIP APIs
 # introduced later. 4.48.3 is compatible with both the fork and Diffusers.
 transformers==4.48.3
