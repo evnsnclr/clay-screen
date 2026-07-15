@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
+ASSETS_DIR = BASE_DIR / "assets"
 BACKEND = os.getenv("CLAY_SCREEN_BACKEND", "preview").strip().lower()
 MAC_ENABLED = BACKEND in {"mac", "mps"}
 MAX_FRAME_BYTES = 2_500_000
@@ -72,6 +73,7 @@ def _cloud_available() -> bool:
 
 app = FastAPI(title="Clay Screen", docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
 
 
 @app.middleware("http")
@@ -80,6 +82,11 @@ async def disable_sensitive_response_caching(request: Request, call_next):
     if request.url.path in {"/api/health", "/api/fal/realtime-token"}:
         response.headers["Cache-Control"] = "no-store"
     return response
+
+
+@app.get("/api/preview-health.json", include_in_schema=False)
+async def preview_health():
+    return FileResponse(BASE_DIR / "api" / "preview-health.json")
 
 if MAC_ENABLED:
     from mac_runtime import MacDiffusionEngine
@@ -191,11 +198,13 @@ async def fal_realtime_token(token_request: FalTokenRequest):
             headers={"Cache-Control": "no-store"},
         )
 
-    if (
-        not upstream.is_success
-        or not isinstance(payload, dict)
-        or not isinstance(payload.get("token"), str)
-    ):
+    token = None
+    if isinstance(payload, str) and payload:
+        token = payload
+    elif isinstance(payload, dict) and isinstance(payload.get("token"), str):
+        token = payload["token"]
+
+    if not upstream.is_success or not token:
         return JSONResponse(
             {"error": "Could not create a realtime token"},
             status_code=502,
@@ -203,7 +212,7 @@ async def fal_realtime_token(token_request: FalTokenRequest):
         )
 
     return JSONResponse(
-        {"token": payload["token"], "expiresIn": FAL_TOKEN_SECONDS},
+        {"token": token, "expiresIn": FAL_TOKEN_SECONDS},
         headers={"Cache-Control": "no-store"},
     )
 

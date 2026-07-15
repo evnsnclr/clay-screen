@@ -66,15 +66,20 @@ remain on the Mac and no fal key is used.
 ## Current verification state
 
 - Unit tests cover missing keys, bad access codes, exact endpoint scoping, and
-  non-cacheable token responses without contacting fal.
+  non-cacheable token responses without contacting fal, including the raw JSON
+  string returned by the live token service.
 - Mocked browser tests cover token exchange, frame backpressure, generated
   output, recording readiness, and connection cleanup without paid inference.
-- The real fal key authenticated, but token creation returned HTTP 403 because
-  the fal balance was exhausted.
-- No paid frames were generated, observed test cost was $0, and visual parity
-  with the original X demo remains unverified.
-- The 15-second cap and localhost-only release boundary passed the final free
-  browser rerun recorded in [VALIDATION.md](VALIDATION.md).
+- One funded Video + Clay session minted a real scoped token, displayed 49
+  generated frames, returned a final observed round-trip of 271 ms, and stopped
+  at the real 15-second cap with 0 browser console errors.
+- At the July 15 price, that run's rate-times-cap estimate is at most $0.0291;
+  no additional paid combinations were run.
+- The clay look and major map structure are convincing, but generated text,
+  full-surface presentation, and frame rate remain behind the original X demo.
+  The static source also leaves motion parity unproven.
+- The tracked real-run screenshot and short video are linked from the README;
+  the localhost-only boundary is unchanged.
 
 ## Primary references
 

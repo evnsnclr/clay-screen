@@ -6,7 +6,7 @@ Updated July 15, 2026.
 
 | Gate | Result |
 |---|---|
-| Python tests | pass; 11 tests in the current run |
+| Python tests | pass; 12 tests in the current run |
 | JavaScript syntax and built-in tests | pass; 9 tests in the current local-only build |
 | Mocked browser FLUX.2 flow | pass; the earlier stream run produced 38 generated frames, and the current run exercised token exchange, cleanup, and the 15-second cap |
 | Official fal browser client integration | pass through WebSocket construction with mocked inference |
@@ -16,43 +16,67 @@ Updated July 15, 2026.
 | Wrong access code fails closed | pass |
 | Realtime app allowlist | pass; only `fal-ai/flux-2/klein/realtime` is accepted |
 | Current fal token schema | pass; request includes both the required `app` and exact `allowed_apps` values |
+| Current fal token response | pass; both the documented object and live raw JSON string forms are normalized server-side |
 | Token response caching | pass; disabled with `Cache-Control: no-store` |
 | `FAL_KEY` in frontend or tracked environment files | pass; not present |
 | Real fal key authentication | pass |
-| Realtime token creation | **blocked: fal returned HTTP 403 because the account balance was exhausted** |
-| Paid FLUX.2 frames and cost | **0 frames; $0 observed cost** |
-| Visual parity with the original X demo | **unverified because no real FLUX.2 frames were produced** |
-| New 15-second session cap | pass in a mocked browser session; the connection closed and the UI returned to Start |
+| Realtime token creation | pass; fal returned HTTP 201 and the localhost endpoint returned HTTP 200 without exposing the token |
+| Paid FLUX.2 frames and cost | pass; 49 displayed frames in one 15-second run, estimated at no more than $0.0291 at the listed rate |
+| Visual parity with the original X demo | partial; strong clay material and layout preservation, but weaker text, presentation, and measured frame rate |
+| New 15-second session cap | pass in mocked and real browser sessions; the connection closed and the UI returned to Start |
 | Stop during WebSocket handshake | pass; the socket guard prevents the pinned fal client from sending a queued frame after Stop |
 | Localhost-only release boundary | pass; hosted token code is removed, Pages requested preview health only, and live token exchange remained on `127.0.0.1` |
+| Real browser console | pass; 0 errors during the paid run |
+| Public evidence | pass; the tracked screenshot and 13-second capture are linked from the README and Pages header |
 
-The current blocker is fal account balance, not key recognition or local token
-validation. The project must not claim real FLUX.2 visual parity until a funded,
-bounded smoke test produces actual frames.
+The bounded real-service gate now passes. This establishes that a fresh clone
+can mint a scoped token, connect to FLUX.2, display real output, and stop on the
+usage cap. It does not establish exact parity with the inspiration.
 
-## Required bounded real-service smoke test
+## Completed bounded real-service smoke test
 
-After adding a small fal balance:
+The July 15 run used the 512×288, three-second map clip in
+`output/review/current-pan-source.mp4`, which was effectively static despite its
+filename. No second paid run was performed.
 
-1. Put the user's own `FAL_KEY` and `CLAY_SCREEN_ACCESS_CODE` in the ignored
-   `.env.local` file and run `./run_demo.sh`.
-2. Confirm the app binds to `127.0.0.1`, an incorrect access code returns `401`,
-   and the fal key never appears in page source, browser storage, or responses.
-3. Use one short **Video + Clay** session and receive at least three real frames.
-4. Press Stop as soon as the visual behavior is clear; otherwise let the
-   15-second cap close the connection.
-5. Confirm the fal dashboard reports no more than the expected bounded usage
-   and cost.
-6. Compare the captured result directly with the original X demo before making a
-   visual-parity claim.
+- Token creation: pass; live fal HTTP 201, local token endpoint HTTP 200.
+- Output: 49 displayed frames before the real 15-second cap.
+- Last observed round-trip: 271 ms. This is a single last-frame reading, not an
+  average or percentile.
+- Effective displayed generation rate: about 3.3 frames per second over the
+  capped window, including two RIFE frames per response.
+- Browser console: 0 errors.
+- Estimated maximum cost: `15 × $0.00194 = $0.0291`. The API-scoped key cannot
+  read account billing, so this is a rate-times-cap estimate rather than a
+  dashboard-confirmed charge.
+- Public artifacts: [`assets/flux2-smoke-result.jpg`](assets/flux2-smoke-result.jpg)
+  and [`assets/clay-screen-demo.mp4`](assets/clay-screen-demo.mp4).
 
 Screen, Camera, and the remaining materials are already covered by free UI or
-mocked checks. Do not spend on additional real-service combinations unless the
-first bounded Clay run reveals a specific issue that needs isolation.
+mocked checks. No additional real-service combinations were purchased.
 
 At the price listed on July 15, 2026, a continuously billed 15-second session is
 approximately `15 × $0.00194 = $0.0291`. Clients can restart sessions, so the cap
 does not impose a hard account-level spending limit.
+
+## Comparison with the original X demo
+
+The result is working in the same broad category, but it is not yet as polished
+as Ryan Stephen's demo.
+
+- **What matches:** real image-to-image streaming, recognizable map geometry,
+  coherent pastel clay regions, rounded raised roads and markers, and stable
+  composition across an effectively static source.
+- **What trails:** small text is garbled, the app transforms the selected source
+  inside a side-by-side studio rather than presenting one immersive transformed
+  browser surface, and the measured 3.3 displayed frames per second is well
+  below Ryan's reported roughly 20 fps.
+- **What this run cannot prove:** motion tracking and temporal consistency under
+  panning, because the validation clip contained no meaningful motion.
+
+The release should therefore be described as a simple, working FLUX.2
+approximation with convincing material treatment—not a pixel-for-pixel or
+frame-rate-equivalent recreation.
 
 ## Optional local Mac fallback receipt
 

@@ -13,6 +13,22 @@ The GitHub Pages site is strictly an **interface preview** and never runs AI.
 Real FLUX.2 generation is localhost-only: clone the repository and use your own
 fal key. Clay Screen does not operate an owner-funded public inference endpoint.
 
+## Real FLUX.2 demo
+
+[![Actual FLUX.2 Clay Screen result](assets/flux2-smoke-result.jpg)](assets/clay-screen-demo.mp4)
+
+Click the image to watch the actual 13-second browser capture from the bounded
+release test. One Video + Clay session produced 49 generated frames before the
+15-second safety cap, with a final reported round-trip of 271 ms and no browser
+console errors. At the listed rate, the session's maximum estimated cost was
+about $0.029.
+
+This proves the live pipeline and the tactile clay treatment. It is not a claim
+of exact parity with the inspiration: the validation source was effectively
+static, small generated text is less stable, and the original demo presents a
+more cohesive full-screen transformation. See the [validation receipt](VALIDATION.md)
+for the direct comparison.
+
 ## Run the FLUX.2 demo locally
 
 Requirements:
@@ -129,7 +145,7 @@ npm test
 ```
 
 These checks use mocks and never perform paid inference. The real-service gate
-and its current fal balance blocker are recorded in [VALIDATION.md](VALIDATION.md).
+and one bounded paid smoke test are recorded in [VALIDATION.md](VALIDATION.md).
 
 ## Licenses and attribution
 

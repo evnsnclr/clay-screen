@@ -29,6 +29,11 @@ def test_home_and_static_assets_are_served():
     assert client.get("/static/app.js").status_code == 200
     assert client.get("/static/flux-config.js").status_code == 200
     assert client.get("/static/styles.css").status_code == 200
+    assert client.get("/assets/clay-screen-demo.mp4").status_code == 200
+    assert client.get("/assets/flux2-smoke-result.jpg").status_code == 200
+    preview = client.get("/api/preview-health.json")
+    assert preview.status_code == 200
+    assert preview.json()["default_runtime"] == "preview"
 
 
 def test_session_configuration_is_validated():
@@ -135,6 +140,45 @@ def test_fal_token_endpoint_scopes_the_upstream_request(monkeypatch):
     assert "server-only-key" not in response.text
 
 
+def test_fal_token_endpoint_accepts_raw_string_response(monkeypatch):
+    class FakeResponse:
+        is_success = True
+        status_code = 201
+
+        @staticmethod
+        def json():
+            return "short-lived-string-token"
+
+    class FakeClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_args):
+            return None
+
+        async def post(self, *_args, **_kwargs):
+            return FakeResponse()
+
+    monkeypatch.setenv("FAL_KEY", "server-only-key")
+    monkeypatch.setenv("CLAY_SCREEN_ACCESS_CODE", "demo-code")
+    monkeypatch.setattr(app_module.httpx, "AsyncClient", lambda **_kwargs: FakeClient())
+
+    response = client.post(
+        "/api/fal/realtime-token",
+        json={
+            "app": "fal-ai/flux-2/klein/realtime",
+            "accessCode": "demo-code",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "token": "short-lived-string-token",
+        "expiresIn": 120,
+    }
+    assert response.headers["cache-control"] == "no-store"
+
+
 def test_fal_token_endpoint_rejects_wrong_code_and_model(monkeypatch):
     monkeypatch.setenv("FAL_KEY", "server-only-key")
     monkeypatch.setenv("CLAY_SCREEN_ACCESS_CODE", "demo-code")
@@ -165,6 +209,7 @@ def test_ui_contract_is_present():
         'id="recordButton"',
         "sends sampled frames to fal.ai",
         'id="accessCode"',
+        'href="assets/clay-screen-demo.mp4"',
     ):
         assert expected in html
 
