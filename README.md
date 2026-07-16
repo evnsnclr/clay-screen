@@ -3,31 +3,70 @@
 Turn a screen, camera, or video into a responsive handmade world with
 [FLUX.2 [klein] Realtime](https://fal.ai/models/fal-ai/flux-2/klein/realtime).
 
-![Clay Screen interface](assets/clay-screen-poster.svg)
-
-[Interface preview](https://evnsnclr.github.io/clay-screen/) ·
+[Watch the real FLUX.2 demo](#real-flux2-demo) ·
 [Research and build notes](RESEARCH_AND_BUILD_PLAN.md) ·
 [Validation receipt](VALIDATION.md)
 
-The GitHub Pages site is strictly an **interface preview** and never runs AI.
-Real FLUX.2 generation is localhost-only: clone the repository and use your own
-fal key. Clay Screen does not operate an owner-funded public inference endpoint.
+Clay Screen intentionally has no hosted app. Real FLUX.2 generation is
+localhost-only: clone the repository and use your own fal key. The repository
+does not operate an owner-funded public inference endpoint.
 
 ## Real FLUX.2 demo
 
-[![Actual FLUX.2 Clay Screen result](assets/flux2-smoke-result.jpg)](assets/clay-screen-demo.mp4)
+![Actual FLUX.2 Clay Screen demo](assets/clay-screen-demo.gif)
 
-Click the image to watch the actual 13-second browser capture from the bounded
-release test. One Video + Clay session produced 49 generated frames before the
-15-second safety cap, with a final reported round-trip of 271 ms and no browser
-console errors. At the listed rate, the session's maximum estimated cost was
-about $0.029.
+The looping preview is cut from the
+[higher-quality 13-second MP4](assets/clay-screen-demo.mp4) captured during the
+bounded release test. One Video + Clay session produced 49 generated frames
+before the 15-second safety cap, with a final reported round-trip of 271 ms and
+no browser console errors. At the listed rate, the session's maximum estimated
+cost was about $0.029.
 
 This proves the live pipeline and the tactile clay treatment. It is not a claim
 of exact parity with the inspiration: the validation source was effectively
 static, small generated text is less stable, and the original demo presents a
 more cohesive full-screen transformation. See the [validation receipt](VALIDATION.md)
 for the direct comparison.
+
+## Record your own high-quality demo
+
+The cleanest result comes from the built-in output recorder:
+
+1. Prepare a 10–12 second, 1440p source clip with one slow pan or scroll. Use
+   large shapes and limited text; rapid movement and tiny labels expose the
+   model's weakest points.
+2. Load it with **Video**, select **Clay** at 100%, enter the local access code,
+   and start FLUX.2. The field clears after authorization, so the code will not
+   appear in the recording.
+3. As soon as the first generated frame appears, click **Record 10s**. Cloud
+   recordings use the 768×768 output canvas at 30 fps and request an 8 Mbps
+   bitrate. The browser saves H.264 MP4 when supported and WebM otherwise.
+4. Keep the strongest 8–12 seconds. The source should move slowly enough that
+   viewers can see the material stay coherent instead of watching a speed test.
+
+To show the whole product rather than only the generated canvas, make the
+browser at least 1440 pixels wide, wait until the access-code field clears, and
+then press **Shift-Command-5** on macOS. Record a selected portion containing
+the two stages and controls, turn the microphone and pointer off, and use
+**SDR / Most Compatible** when that option is available. Apple documents the
+current controls in its [Mac screen-recording guide](https://support.apple.com/en-us/102618).
+
+Normalize either the browser recording (`.webm`) or Mac recording (`.mov`) to a
+high-quality, broadly compatible square MP4:
+
+```bash
+ffmpeg -i recording.webm \
+  -vf "fps=30,scale=1080:1080:flags=lanczos" \
+  -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p \
+  -movflags +faststart -an demo.mp4
+```
+
+Record a square region from the start so this command does not stretch the
+image. Encoding at 30 fps cannot create missing model frames; smooth source
+motion, a stable composition, and a clean crop matter more than export bitrate.
+To replace the README demo, update `assets/clay-screen-demo.mp4`, regenerate a
+short `assets/clay-screen-demo.gif` preview, and export one strong frame to
+`assets/flux2-smoke-result.jpg`.
 
 ## Run the FLUX.2 demo locally
 
@@ -128,11 +167,6 @@ Hugging Face cache. The local path uses 512×288 inputs and a two-timestep
 StreamDiffusion batch through PyTorch MPS. On the development Mac (`Mac16,5`,
 48 GB), warm model calls took 103–136 ms; performance varies by Mac. Leave
 `FAL_KEY` and `CLAY_SCREEN_ACCESS_CODE` blank when you want this path selected.
-
-## Interface-only preview
-
-The public GitHub Pages URL uses a labeled browser effect. It cannot mint a fal
-token, never sends frames to fal, and is not presented as AI diffusion.
 
 ## Development
 

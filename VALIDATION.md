@@ -10,7 +10,7 @@ Updated July 15, 2026.
 | JavaScript syntax and built-in tests | pass; 9 tests in the current local-only build |
 | Mocked browser FLUX.2 flow | pass; the earlier stream run produced 38 generated frames, and the current run exercised token exchange, cleanup, and the 15-second cap |
 | Official fal browser client integration | pass through WebSocket construction with mocked inference |
-| Static GitHub Pages preview | pass; interface-only, preview health only, clean console |
+| Hosted app | absent by design; GitHub Pages is disabled and the README holds the real video |
 | Responsive layout | pass at 390 × 844 |
 | Missing server key fails closed | pass |
 | Wrong access code fails closed | pass |
@@ -25,9 +25,10 @@ Updated July 15, 2026.
 | Visual parity with the original X demo | partial; strong clay material and layout preservation, but weaker text, presentation, and measured frame rate |
 | New 15-second session cap | pass in mocked and real browser sessions; the connection closed and the UI returned to Start |
 | Stop during WebSocket handshake | pass; the socket guard prevents the pinned fal client from sending a queued frame after Stop |
-| Localhost-only release boundary | pass; hosted token code is removed, Pages requested preview health only, and live token exchange remained on `127.0.0.1` |
+| Localhost-only release boundary | pass; hosted token code is removed, Pages is disabled, and live token exchange remained on `127.0.0.1` |
 | Real browser console | pass; 0 errors during the paid run |
-| Public evidence | pass; the tracked screenshot and 13-second capture are linked from the README and Pages header |
+| Built-in recording quality | pass; FLUX.2 capture requests 30 fps at 8 Mbps from the 768×768 output canvas |
+| Public evidence | pass; the README embeds a tracked 10-second GIF preview and links the 13-second MP4 master |
 
 The bounded real-service gate now passes. This establishes that a fresh clone
 can mint a scoped token, connect to FLUX.2, display real output, and stop on the
@@ -50,7 +51,8 @@ filename. No second paid run was performed.
   read account billing, so this is a rate-times-cap estimate rather than a
   dashboard-confirmed charge.
 - Public artifacts: [`assets/flux2-smoke-result.jpg`](assets/flux2-smoke-result.jpg)
-  and [`assets/clay-screen-demo.mp4`](assets/clay-screen-demo.mp4).
+  [`assets/clay-screen-demo.gif`](assets/clay-screen-demo.gif), and
+  [`assets/clay-screen-demo.mp4`](assets/clay-screen-demo.mp4).
 
 Screen, Camera, and the remaining materials are already covered by free UI or
 mocked checks. No additional real-service combinations were purchased.

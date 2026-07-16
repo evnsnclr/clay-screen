@@ -12,8 +12,8 @@ import {
   FLUX_OUTPUT_SIZE,
   availableRealRuntimes,
   buildFluxInput,
+  buildRecordingOptions,
   chooseRuntime,
-  isInterfacePreviewLocation,
 } from "../static/flux-config.js";
 
 test("cloud is preferred when it is available", () => {
@@ -32,13 +32,14 @@ test("local and preview are safe fallbacks", () => {
   assert.equal(chooseRuntime({}), "preview");
 });
 
-test("GitHub Pages and an explicit preview flag skip server endpoints", () => {
-  assert.equal(isInterfacePreviewLocation({ hostname: "evnsnclr.github.io" }), true);
-  assert.equal(
-    isInterfacePreviewLocation({ hostname: "127.0.0.1", search: "?preview=1" }),
-    true,
-  );
-  assert.equal(isInterfacePreviewLocation({ hostname: "localhost" }), false);
+test("recording options request a high-quality bitrate", () => {
+  assert.deepEqual(buildRecordingOptions({ mimeType: "video/mp4", cloud: true }), {
+    mimeType: "video/mp4",
+    videoBitsPerSecond: 8_000_000,
+  });
+  assert.deepEqual(buildRecordingOptions(), {
+    videoBitsPerSecond: 4_000_000,
+  });
 });
 
 test("the browser SDK, package lock input, and attribution stay on one version", () => {

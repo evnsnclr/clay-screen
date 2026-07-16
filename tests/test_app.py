@@ -24,16 +24,11 @@ def test_health_reports_preview_mode(monkeypatch):
     assert response.headers["cache-control"] == "no-store"
 
 
-def test_home_and_static_assets_are_served():
+def test_home_and_static_files_are_served():
     assert client.get("/").status_code == 200
     assert client.get("/static/app.js").status_code == 200
     assert client.get("/static/flux-config.js").status_code == 200
     assert client.get("/static/styles.css").status_code == 200
-    assert client.get("/assets/clay-screen-demo.mp4").status_code == 200
-    assert client.get("/assets/flux2-smoke-result.jpg").status_code == 200
-    preview = client.get("/api/preview-health.json")
-    assert preview.status_code == 200
-    assert preview.json()["default_runtime"] == "preview"
 
 
 def test_session_configuration_is_validated():
@@ -209,7 +204,6 @@ def test_ui_contract_is_present():
         'id="recordButton"',
         "sends sampled frames to fal.ai",
         'id="accessCode"',
-        'href="assets/clay-screen-demo.mp4"',
     ):
         assert expected in html
 
