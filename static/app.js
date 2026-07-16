@@ -8,8 +8,8 @@ import {
   FLUX_OUTPUT_SIZE,
   availableRealRuntimes,
   buildFluxInput,
+  buildRecordingOptions,
   chooseRuntime,
-  isInterfacePreviewLocation,
 } from "./flux-config.js";
 import { installFalSocketGuard } from "./fal-socket-guard.js";
 
@@ -90,20 +90,11 @@ async function boot() {
 }
 
 async function loadHealth() {
-  if (!isInterfacePreviewLocation(window.location)) {
-    try {
-      const response = await fetch("api/health", { cache: "no-store" });
-      if (response.ok) return await response.json();
-    } catch {
-      // Static hosts do not have a token function.
-    }
-  }
-
   try {
-    const response = await fetch("api/preview-health.json", { cache: "no-store" });
+    const response = await fetch("api/health", { cache: "no-store" });
     if (response.ok) return await response.json();
   } catch {
-    // The hard-coded preview fallback below is intentionally non-AI.
+    // The hard-coded fallback below is intentionally non-AI.
   }
 
   return { runtimes: { preview: { available: true } }, default_runtime: "preview" };
@@ -159,7 +150,7 @@ function applyRuntime(mode, { announce = true } = {}) {
 
   runtimeBadge.textContent = "INTERFACE PREVIEW";
   if (announce) {
-    setMessage("This public page previews the interface only. Clone it and use your own fal key locally for live FLUX.2.");
+    setMessage("No AI runtime is configured. Add your own fal key locally for live FLUX.2.");
   }
 }
 
@@ -662,7 +653,10 @@ function startRecording() {
   const stream = outputCanvas.captureStream(state.mode === "cloud" ? 30 : 12);
   const mimeType = supportedRecordingType();
   const chunks = [];
-  const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+  const recorder = new MediaRecorder(stream, buildRecordingOptions({
+    mimeType,
+    cloud: state.mode === "cloud",
+  }));
   const recording = { recorder, chunks, save: true, timer: null };
   state.recording = recording;
   recordButton.setAttribute("aria-pressed", "true");

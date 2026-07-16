@@ -19,7 +19,6 @@ from pydantic import BaseModel, Field
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
-ASSETS_DIR = BASE_DIR / "assets"
 BACKEND = os.getenv("CLAY_SCREEN_BACKEND", "preview").strip().lower()
 MAC_ENABLED = BACKEND in {"mac", "mps"}
 MAX_FRAME_BYTES = 2_500_000
@@ -73,7 +72,6 @@ def _cloud_available() -> bool:
 
 app = FastAPI(title="Clay Screen", docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-app.mount("/assets", StaticFiles(directory=ASSETS_DIR), name="assets")
 
 
 @app.middleware("http")
@@ -83,10 +81,6 @@ async def disable_sensitive_response_caching(request: Request, call_next):
         response.headers["Cache-Control"] = "no-store"
     return response
 
-
-@app.get("/api/preview-health.json", include_in_schema=False)
-async def preview_health():
-    return FileResponse(BASE_DIR / "api" / "preview-health.json")
 
 if MAC_ENABLED:
     from mac_runtime import MacDiffusionEngine

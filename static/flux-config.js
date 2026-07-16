@@ -20,10 +20,10 @@ export function availableRealRuntimes(health = {}) {
   return ["cloud", "local"].filter((name) => runtimes[name]?.available);
 }
 
-export function isInterfacePreviewLocation(locationLike = {}) {
-  const hostname = typeof locationLike.hostname === "string" ? locationLike.hostname : "";
-  const search = typeof locationLike.search === "string" ? locationLike.search : "";
-  return hostname.endsWith(".github.io") || new URLSearchParams(search).get("preview") === "1";
+export function buildRecordingOptions({ mimeType = "", cloud = false } = {}) {
+  const options = { videoBitsPerSecond: cloud ? 8_000_000 : 4_000_000 };
+  if (mimeType) options.mimeType = mimeType;
+  return options;
 }
 
 export function buildFluxInput({ imageUrl, prompt, requestId }) {
