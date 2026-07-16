@@ -28,7 +28,7 @@ Updated July 15, 2026.
 | Localhost-only release boundary | pass; hosted token code is removed, Pages is disabled, and live token exchange remained on `127.0.0.1` |
 | Real browser console | pass; 0 errors during the paid run |
 | Built-in recording quality | pass; FLUX.2 capture requests 30 fps at 8 Mbps from the 768×768 output canvas |
-| Public evidence | pass; the tracked screenshot links to the 13-second capture in the README only |
+| Public evidence | pass; the README embeds a tracked 10-second GIF preview and links the 13-second MP4 master |
 
 The bounded real-service gate now passes. This establishes that a fresh clone
 can mint a scoped token, connect to FLUX.2, display real output, and stop on the
@@ -51,7 +51,8 @@ filename. No second paid run was performed.
   read account billing, so this is a rate-times-cap estimate rather than a
   dashboard-confirmed charge.
 - Public artifacts: [`assets/flux2-smoke-result.jpg`](assets/flux2-smoke-result.jpg)
-  and [`assets/clay-screen-demo.mp4`](assets/clay-screen-demo.mp4).
+  [`assets/clay-screen-demo.gif`](assets/clay-screen-demo.gif), and
+  [`assets/clay-screen-demo.mp4`](assets/clay-screen-demo.mp4).
 
 Screen, Camera, and the remaining materials are already covered by free UI or
 mocked checks. No additional real-service combinations were purchased.

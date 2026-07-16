@@ -3,7 +3,7 @@
 Turn a screen, camera, or video into a responsive handmade world with
 [FLUX.2 [klein] Realtime](https://fal.ai/models/fal-ai/flux-2/klein/realtime).
 
-[Watch the real 13-second FLUX.2 video](assets/clay-screen-demo.mp4) ·
+[Watch the real FLUX.2 demo](#real-flux2-demo) ·
 [Research and build notes](RESEARCH_AND_BUILD_PLAN.md) ·
 [Validation receipt](VALIDATION.md)
 
@@ -13,13 +13,14 @@ does not operate an owner-funded public inference endpoint.
 
 ## Real FLUX.2 demo
 
-[![Actual FLUX.2 Clay Screen result](assets/flux2-smoke-result.jpg)](assets/clay-screen-demo.mp4)
+![Actual FLUX.2 Clay Screen demo](assets/clay-screen-demo.gif)
 
-Click the image to watch the actual 13-second browser capture from the bounded
-release test. One Video + Clay session produced 49 generated frames before the
-15-second safety cap, with a final reported round-trip of 271 ms and no browser
-console errors. At the listed rate, the session's maximum estimated cost was
-about $0.029.
+The looping preview is cut from the
+[higher-quality 13-second MP4](assets/clay-screen-demo.mp4) captured during the
+bounded release test. One Video + Clay session produced 49 generated frames
+before the 15-second safety cap, with a final reported round-trip of 271 ms and
+no browser console errors. At the listed rate, the session's maximum estimated
+cost was about $0.029.
 
 This proves the live pipeline and the tactile clay treatment. It is not a claim
 of exact parity with the inspiration: the validation source was effectively
@@ -63,8 +64,9 @@ ffmpeg -i recording.webm \
 Record a square region from the start so this command does not stretch the
 image. Encoding at 30 fps cannot create missing model frames; smooth source
 motion, a stable composition, and a clean crop matter more than export bitrate.
-To replace the README demo, update `assets/clay-screen-demo.mp4` and export one
-strong frame to `assets/flux2-smoke-result.jpg`.
+To replace the README demo, update `assets/clay-screen-demo.mp4`, regenerate a
+short `assets/clay-screen-demo.gif` preview, and export one strong frame to
+`assets/flux2-smoke-result.jpg`.
 
 ## Run the FLUX.2 demo locally
 

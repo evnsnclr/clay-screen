@@ -79,8 +79,8 @@ remain on the Mac and no fal key is used.
 - The clay look and major map structure are convincing, but generated text,
   full-surface presentation, and frame rate remain behind the original X demo.
   The static source also leaves motion parity unproven.
-- The tracked real-run screenshot and short video are linked from the README.
-  GitHub Pages is disabled and the localhost-only boundary is unchanged.
+- The tracked real-run GIF preview and MP4 master live in the README. GitHub
+  Pages is disabled and the localhost-only boundary is unchanged.
 
 ## Primary references
 
