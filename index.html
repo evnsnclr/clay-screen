@@ -21,7 +21,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="static/styles.css" />
+    <link rel="stylesheet" href="static/styles.css?v=0.3.4" />
   </head>
   <body>
     <div class="grain" aria-hidden="true"></div>
@@ -62,9 +62,10 @@
             </div>
             <div class="media-frame" id="inputFrame">
               <video id="inputVideo" aria-label="Selected source" autoplay muted playsinline loop></video>
+              <canvas id="demoCanvas" width="1024" height="1024" aria-label="Animated showcase source" hidden></canvas>
               <div id="inputEmpty" class="empty-state">
                 <span class="empty-orb input-orb"></span>
-                <p>Choose a screen, camera, or video</p>
+                <p>Choose Demo, a browser tab, camera, or video</p>
               </div>
             </div>
           </article>
@@ -74,7 +75,7 @@
               <span>02 / OUTPUT</span>
               <span id="outputStatus">waiting</span>
             </div>
-            <div class="media-frame output-frame">
+            <div class="media-frame output-frame" id="outputFrame">
               <canvas id="outputCanvas" width="832" height="480" aria-label="Generated output">
                 Live generated output appears here.
               </canvas>
@@ -85,6 +86,10 @@
               <div id="liveIndicator" class="live-indicator" hidden>
                 <i></i> LIVE
               </div>
+              <div id="performanceBadge" class="performance-badge" hidden>waiting for FLUX.2</div>
+              <button id="exitShowcaseButton" class="showcase-exit" type="button" hidden>
+                Exit showcase
+              </button>
             </div>
           </article>
         </div>
@@ -98,7 +103,8 @@
           <div class="control-group source-controls">
             <span class="control-title">Source</span>
             <div class="segmented" role="group" aria-label="Choose source">
-              <button class="source-button" data-source="screen" type="button" aria-pressed="false">Screen</button>
+              <button class="source-button" data-source="demo" type="button" aria-pressed="false">Demo</button>
+              <button class="source-button" data-source="screen" type="button" aria-pressed="false">Browser tab</button>
               <button class="source-button" data-source="camera" type="button" aria-pressed="false">Camera</button>
               <button class="source-button" data-source="video" type="button" aria-pressed="false">Video</button>
               <input id="videoFile" type="file" accept="video/*" hidden />
@@ -147,11 +153,17 @@
           </form>
 
           <div class="action-controls">
+            <button id="scrollButton" class="secondary-button" type="button" aria-pressed="false" hidden>
+              Scroll captured tab
+            </button>
+            <button id="showcaseButton" class="secondary-button" type="button" aria-pressed="false" disabled>
+              Showcase
+            </button>
             <button id="startButton" class="primary-button" type="button">
               <span>Start transforming</span><i>↗</i>
             </button>
             <button id="recordButton" class="secondary-button" type="button" aria-pressed="false" disabled>
-              Record 10s
+              Record
             </button>
           </div>
         </div>
@@ -197,6 +209,7 @@
     </footer>
 
     <canvas id="captureCanvas" width="704" height="704" hidden></canvas>
-    <script type="module" src="static/app.js"></script>
+    <canvas id="recordingCanvas" width="1080" height="1080" hidden></canvas>
+    <script type="module" src="static/app.js?v=0.3.4"></script>
   </body>
 </html>

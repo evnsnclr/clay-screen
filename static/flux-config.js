@@ -5,6 +5,9 @@ export const FAL_CLIENT_URL =
 export const FLUX_INPUT_SIZE = 704;
 export const FLUX_OUTPUT_SIZE = 768;
 export const FLUX_JPEG_QUALITY = 0.5;
+export const CLOUD_CAPTURE_INTERVAL_MS = 100;
+export const CLOUD_PENDING_LIMIT = 16;
+export const CLOUD_PENDING_TTL_MS = 5_000;
 export const CLOUD_STARTUP_TIMEOUT_MS = 10_000;
 export const CLOUD_SESSION_LIMIT_MS = 15_000;
 
@@ -21,7 +24,7 @@ export function availableRealRuntimes(health = {}) {
 }
 
 export function buildRecordingOptions({ mimeType = "", cloud = false } = {}) {
-  const options = { videoBitsPerSecond: cloud ? 8_000_000 : 4_000_000 };
+  const options = { videoBitsPerSecond: cloud ? 12_000_000 : 6_000_000 };
   if (mimeType) options.mimeType = mimeType;
   return options;
 }
@@ -40,6 +43,6 @@ export function buildFluxInput({ imageUrl, prompt, requestId }) {
     schedule_mu: 2.3,
     image_size: "square",
     enable_interpolation: true,
-    output_feedback_strength: 0.9,
+    output_feedback_strength: 0.95,
   };
 }

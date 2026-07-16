@@ -3,6 +3,9 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
+  CLOUD_CAPTURE_INTERVAL_MS,
+  CLOUD_PENDING_LIMIT,
+  CLOUD_PENDING_TTL_MS,
   CLOUD_STARTUP_TIMEOUT_MS,
   CLOUD_SESSION_LIMIT_MS,
   FAL_CLIENT_URL,
@@ -35,10 +38,10 @@ test("local and preview are safe fallbacks", () => {
 test("recording options request a high-quality bitrate", () => {
   assert.deepEqual(buildRecordingOptions({ mimeType: "video/mp4", cloud: true }), {
     mimeType: "video/mp4",
-    videoBitsPerSecond: 8_000_000,
+    videoBitsPerSecond: 12_000_000,
   });
   assert.deepEqual(buildRecordingOptions(), {
-    videoBitsPerSecond: 4_000_000,
+    videoBitsPerSecond: 6_000_000,
   });
 });
 
@@ -63,6 +66,9 @@ test("FLUX request uses the documented realtime settings", () => {
   assert.equal(FLUX_INPUT_SIZE, 704);
   assert.equal(FLUX_OUTPUT_SIZE, 768);
   assert.equal(FLUX_JPEG_QUALITY, 0.5);
+  assert.equal(CLOUD_CAPTURE_INTERVAL_MS, 100);
+  assert.equal(CLOUD_PENDING_LIMIT, 16);
+  assert.equal(CLOUD_PENDING_TTL_MS, 5_000);
   assert.equal(CLOUD_STARTUP_TIMEOUT_MS, 10_000);
   assert.equal(CLOUD_SESSION_LIMIT_MS, 15_000);
   assert.deepEqual(request, {
@@ -74,7 +80,7 @@ test("FLUX request uses the documented realtime settings", () => {
     schedule_mu: 2.3,
     image_size: "square",
     enable_interpolation: true,
-    output_feedback_strength: 0.9,
+    output_feedback_strength: 0.95,
   });
 });
 

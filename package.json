@@ -1,6 +1,6 @@
 {
   "name": "clay-screen",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Realtime screen-to-clay transformation with FLUX.2 Klein and an optional Mac fallback.",

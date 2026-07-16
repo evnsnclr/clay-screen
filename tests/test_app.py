@@ -200,6 +200,7 @@ def test_ui_contract_is_present():
         'data-source="screen"',
         'data-source="camera"',
         'data-source="video"',
+        'data-source="demo"',
         'data-style="clay"',
         'id="recordButton"',
         "sends sampled frames to fal.ai",
@@ -208,6 +209,8 @@ def test_ui_contract_is_present():
         assert expected in html
 
     assert "getDisplayMedia" in javascript
+    assert "CaptureController" in javascript
+    assert "CloudFramePump" in javascript
     assert "MediaRecorder" in javascript
     assert "fal-ai/flux-2/klein/realtime" not in html
     assert "FAL_MODEL" in javascript

@@ -160,6 +160,8 @@ h1 em { font-family: Georgia, serif; font-weight: 400; color: var(--coral); }
 
 .output-frame { background: #d9d4c7; }
 .media-frame video, .media-frame canvas { width: 100%; height: 100%; object-fit: cover; display: block; }
+.studio[data-source="screen"] #inputVideo { object-fit: contain; background: #cdb9a8; }
+.studio.is-scroll-forwarding #outputCanvas { cursor: ns-resize; }
 
 .empty-state {
   position: absolute;
@@ -192,7 +194,7 @@ h1 em { font-family: Georgia, serif; font-weight: 400; color: var(--coral); }
 .live-indicator {
   position: absolute;
   left: 16px;
-  bottom: 16px;
+  top: 16px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -206,6 +208,67 @@ h1 em { font-family: Georgia, serif; font-weight: 400; color: var(--coral); }
 }
 .live-indicator i { width: 6px; height: 6px; background: #ff715b; border-radius: 50%; animation: pulse 1.4s infinite; }
 @keyframes pulse { 50% { opacity: .35; } }
+
+.performance-badge {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  padding: 7px 9px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 100px;
+  color: rgba(255,255,255,.92);
+  background: rgba(20,20,18,.68);
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+  font: 500 9px/1 "DM Mono", monospace;
+  letter-spacing: .04em;
+}
+
+.showcase-exit {
+  position: absolute;
+  z-index: 2;
+  right: 16px;
+  top: 16px;
+  padding: 9px 12px;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 100px;
+  color: white;
+  background: rgba(20,20,18,.72);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  font: 600 10px/1 "DM Mono", monospace;
+}
+
+body.has-showcase { overflow: hidden; }
+.studio.is-showcase .output-card {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255,255,255,.3), transparent 48%),
+    linear-gradient(145deg, #dfcfc0, #cbb6a7);
+}
+.studio.is-showcase .output-card .stage-label {
+  width: min(calc(100vw - 44px), calc(100vh - 100px));
+  color: rgba(23,23,20,.62);
+}
+.studio.is-showcase .output-frame {
+  width: min(calc(100vw - 44px), calc(100vh - 100px));
+  aspect-ratio: 1;
+  flex: 0 1 auto;
+  border-radius: 32px;
+  box-shadow: 0 34px 80px rgba(49,31,19,.28);
+}
+.studio.is-showcase:not([data-runtime="cloud"]) .output-card .stage-label,
+.studio.is-showcase:not([data-runtime="cloud"]) .output-frame {
+  width: min(calc(100vw - 44px), calc((100vh - 100px) * 1.7333));
+}
+.studio.is-showcase:not([data-runtime="cloud"]) .output-frame { aspect-ratio: 832 / 480; }
 
 .control-deck {
   margin-top: 14px;
@@ -254,7 +317,7 @@ select,
 input[type="range"] { width: 100%; accent-color: var(--coral); }
 #strengthValue { color: var(--ink); min-width: 28px; }
 
-.action-controls { display: flex; align-items: stretch; gap: 7px; }
+.action-controls { display: flex; flex-wrap: wrap; align-items: stretch; justify-content: flex-end; gap: 7px; }
 .primary-button, .secondary-button {
   border: 0;
   border-radius: 14px;
@@ -300,6 +363,8 @@ footer { max-width: 1420px; margin: 0 auto; padding: 28px 36px 38px; display: fl
   .runtime-control, .access-control, .source-controls, .style-controls, .strength-control { width: 100%; }
   .action-controls, .primary-button { width: 100%; }
   .primary-button { flex: 1; }
+  .action-controls { justify-content: stretch; }
+  .action-controls .secondary-button { flex: 1 1 auto; }
   .notes { grid-template-columns: 1fr; gap: 28px; }
   .notes article, .notes article:first-child { padding: 0; border: 0; }
   .header-meta { gap: 10px; }
