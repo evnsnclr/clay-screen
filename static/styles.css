@@ -284,6 +284,7 @@ body.has-showcase { overflow: hidden; }
 .control-group { min-width: 0; }
 .control-title { display: block; margin-bottom: 10px; color: var(--muted); font: 500 10px/1 "DM Mono", monospace; letter-spacing: .1em; text-transform: uppercase; }
 .runtime-control, .access-control { flex: 0 1 190px; }
+.recording-control { flex: 0 1 190px; }
 .source-controls, .style-controls { flex: 0 0 auto; }
 .strength-control { flex: 1 1 220px; }
 .action-controls { margin-left: auto; }
@@ -360,7 +361,7 @@ footer { max-width: 1420px; margin: 0 auto; padding: 28px 36px 38px; display: fl
   h1 { font-size: clamp(52px, 16vw, 78px); }
   .stage-grid { grid-template-columns: 1fr; }
   .control-deck { display: grid; grid-template-columns: 1fr; }
-  .runtime-control, .access-control, .source-controls, .style-controls, .strength-control { width: 100%; }
+  .runtime-control, .access-control, .recording-control, .source-controls, .style-controls, .strength-control { width: 100%; }
   .action-controls, .primary-button { width: 100%; }
   .primary-button { flex: 1; }
   .action-controls { justify-content: stretch; }

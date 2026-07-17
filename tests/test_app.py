@@ -203,6 +203,12 @@ def test_ui_contract_is_present():
         'data-source="demo"',
         'data-style="clay"',
         'id="recordButton"',
+        'id="recordingMode"',
+        '<option value="live" selected>Live compare · smooth</option>',
+        '<option value="audit">Exact pairs · audit</option>',
+        'id="liveSourceCanvas"',
+        'id="matchedSourceCanvas"',
+        'id="matchedOutputCanvas"',
         "sends sampled frames to fal.ai",
         'id="accessCode"',
     ):
@@ -212,6 +218,10 @@ def test_ui_contract_is_present():
     assert "CaptureController" in javascript
     assert "CloudFramePump" in javascript
     assert "MediaRecorder" in javascript
+    assert 'drawSourceToLiveRecording()' in javascript
+    assert 'drawCompareCard(liveSource' in javascript
+    assert 'drawCompareCard(outputCanvas' in javascript
+    assert 'drawCompareCard(matchedOutputCanvas' in javascript
     assert "fal-ai/flux-2/klein/realtime" not in html
     assert "FAL_MODEL" in javascript
     assert "CLAY_SCREEN" not in javascript

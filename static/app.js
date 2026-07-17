@@ -13,10 +13,17 @@ import {
   buildFluxInput,
   buildRecordingOptions,
   chooseRuntime,
-} from "./flux-config.js?v=0.3.4";
+} from "./flux-config.js?v=0.3.8";
 import { CloudFramePump } from "./cloud-frame-pump.js?v=0.3.4";
 import { startDemoSource } from "./demo-source.js?v=0.3.4";
 import { installFalSocketGuard } from "./fal-socket-guard.js?v=0.3.4";
+import {
+  containRect,
+  recordingIsReady,
+  recordingPreset,
+  shouldPublishPair,
+  shouldStartArmedRecording,
+} from "./recording-layout.js?v=0.3.8";
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -31,6 +38,12 @@ const outputContext = outputCanvas.getContext("2d");
 const outputEmpty = $("#outputEmpty");
 const captureCanvas = $("#captureCanvas");
 const captureContext = captureCanvas.getContext("2d");
+const liveSourceCanvas = $("#liveSourceCanvas");
+const liveSourceContext = liveSourceCanvas.getContext("2d");
+const matchedSourceCanvas = $("#matchedSourceCanvas");
+const matchedSourceContext = matchedSourceCanvas.getContext("2d");
+const matchedOutputCanvas = $("#matchedOutputCanvas");
+const matchedOutputContext = matchedOutputCanvas.getContext("2d");
 const recordingCanvas = $("#recordingCanvas");
 const recordingContext = recordingCanvas.getContext("2d");
 const videoFile = $("#videoFile");
@@ -52,9 +65,10 @@ const accessControl = $("#accessControl");
 const accessCode = $("#accessCode");
 const strength = $("#strength");
 const strengthValue = $("#strengthValue");
+const recordingMode = $("#recordingMode");
 
 const STYLE_PROMPTS = {
-  clay: "Restyle this exact frame as one coherent handmade stop-motion polymer-clay browser diorama, photographed head-on with a fixed camera. Preserve the composition, browser chrome, roads, cards, controls, large text placement, and scroll position. Use fingerprints, imperfect rounded edges, colorful raised clay markers, matte pastel surfaces, soft contact shadows, and miniature studio lighting. Do not add another browser, screen, device, window, border, or frame.",
+  clay: "Material-only edit of this exact input frame in handmade polymer clay. Faithfully reconstruct the same frame; do not redesign it. Preserve camera view, crop, layout, tile positions and sizes, image subjects, people, poses, objects, colors, browser chrome, icons, text shapes, and scroll position. Every tile must show the same subject as the input. Never add, remove, replace, combine, or reinterpret content. Change only surfaces to matte clay with subtle fingerprints, shallow relief, imperfect edges, and soft contact shadows. No roads, markers, extra windows, devices, borders, or new objects.",
   felt: "Restyle this exact frame as one coherent layered hand-cut felt interface. Preserve the composition, controls, map structure, cards, large text placement, and scroll position. Use visible wool fibers, embroidered edges, stacked textile shapes, warm craft-table lighting, and soft dimensional shadows. Do not add another window or device.",
   ink: "Restyle this exact frame as an expressive India-ink interface on warm paper. Preserve the composition, controls, map structure, cards, large text placement, and scroll position. Use bold brush edges, restrained watercolor bleed, crisp editorial shapes, and subtle paper texture. Do not add another window or device.",
   dream: "Restyle this exact frame as one coherent surreal miniature interface. Preserve the composition, controls, map structure, cards, large text placement, and scroll position. Use pearlescent glass, soft luminous gradients, playful sculptural forms, and cinematic glow. Do not add another window or device.",
@@ -87,7 +101,10 @@ const state = {
   sessionTimer: null,
   startupTimer: null,
   recording: null,
-  recordingArmed: false,
+  recordingArmed: null,
+  matchedPairReady: false,
+  matchedPair: null,
+  displayFrame: null,
   captureController: null,
   forwardingWheel: false,
   demoStop: null,
@@ -142,6 +159,12 @@ function applyRuntime(mode, { announce = true } = {}) {
     captureCanvas.height = FLUX_INPUT_SIZE;
     outputCanvas.width = FLUX_OUTPUT_SIZE;
     outputCanvas.height = FLUX_OUTPUT_SIZE;
+    resetMatchedPair(
+      captureCanvas.width,
+      captureCanvas.height,
+      outputCanvas.width,
+      outputCanvas.height,
+    );
     runtimeBadge.textContent = "FLUX.2 · CLOUD READY";
     runtimeBadge.classList.add("is-cloud");
     if (announce) setMessage("FLUX.2 is ready. Choose Demo or a browser tab, then enter your local access code.");
@@ -152,6 +175,12 @@ function applyRuntime(mode, { announce = true } = {}) {
   captureCanvas.height = 288;
   outputCanvas.width = 832;
   outputCanvas.height = 480;
+  resetMatchedPair(
+    captureCanvas.width,
+    captureCanvas.height,
+    outputCanvas.width,
+    outputCanvas.height,
+  );
   performanceBadge.hidden = true;
 
   if (state.mode === "local") {
@@ -369,22 +398,71 @@ function drawFramedScreen(context, media, width, height) {
   context.restore();
 }
 
-function drawSourceToCapture() {
+function drawSourceFrame(context, canvas) {
   const media = getSourceMedia();
-  captureContext.clearRect(0, 0, captureCanvas.width, captureCanvas.height);
+  context.clearRect(0, 0, canvas.width, canvas.height);
   if (sourceKind === "screen" && state.mode === "cloud") {
-    drawFramedScreen(captureContext, media, captureCanvas.width, captureCanvas.height);
+    drawFramedScreen(context, media, canvas.width, canvas.height);
   } else {
-    drawCover(captureContext, media, captureCanvas.width, captureCanvas.height);
+    drawCover(context, media, canvas.width, canvas.height);
+  }
+}
+
+function drawSourceToCapture() {
+  drawSourceFrame(captureContext, captureCanvas);
+}
+
+function drawSourceToLiveRecording() {
+  if (
+    liveSourceCanvas.width !== captureCanvas.width
+    || liveSourceCanvas.height !== captureCanvas.height
+  ) {
+    liveSourceCanvas.width = captureCanvas.width;
+    liveSourceCanvas.height = captureCanvas.height;
+  }
+  drawSourceFrame(liveSourceContext, liveSourceCanvas);
+}
+
+function resetMatchedPair(
+  sourceWidth = captureCanvas.width,
+  sourceHeight = captureCanvas.height,
+  outputWidth = outputCanvas.width,
+  outputHeight = outputCanvas.height,
+) {
+  matchedSourceCanvas.width = sourceWidth;
+  matchedSourceCanvas.height = sourceHeight;
+  matchedOutputCanvas.width = outputWidth;
+  matchedOutputCanvas.height = outputHeight;
+  matchedSourceContext.clearRect(0, 0, sourceWidth, sourceHeight);
+  matchedOutputContext.clearRect(0, 0, outputWidth, outputHeight);
+  state.matchedPairReady = false;
+  state.matchedPair = null;
+}
+
+function publishMatchedPair(source, output, pair = {}) {
+  if (!shouldPublishPair(state.matchedPair?.capturedAt, pair.capturedAt)) return;
+  matchedSourceContext.clearRect(0, 0, matchedSourceCanvas.width, matchedSourceCanvas.height);
+  matchedOutputContext.clearRect(0, 0, matchedOutputCanvas.width, matchedOutputCanvas.height);
+  matchedSourceContext.drawImage(source, 0, 0, matchedSourceCanvas.width, matchedSourceCanvas.height);
+  matchedOutputContext.drawImage(output, 0, 0, matchedOutputCanvas.width, matchedOutputCanvas.height);
+  state.matchedPairReady = true;
+  state.matchedPair = pair;
+
+  const armedMode = state.recordingArmed;
+  if (shouldStartArmedRecording(armedMode, "matched-pair") && !state.recording) {
+    state.recordingArmed = null;
+    beginRecording(recordingPreset(armedMode).mode);
   }
 }
 
 function renderPreview() {
   if (!state.running || state.mode !== "preview") return;
+  drawSourceToCapture();
+  const capturedAt = performance.now();
   outputContext.save();
   outputContext.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
   outputContext.filter = PREVIEW_FILTERS[selectedStyle];
-  drawCover(outputContext, getSourceMedia(), outputCanvas.width, outputCanvas.height);
+  drawCover(outputContext, captureCanvas, outputCanvas.width, outputCanvas.height);
   outputContext.filter = "none";
   outputContext.globalCompositeOperation = "soft-light";
   const alpha = Number(strength.value) / 500;
@@ -392,6 +470,12 @@ function renderPreview() {
   outputContext.fillStyle = `${colors[selectedStyle]}${Math.round(alpha * 255).toString(16).padStart(2, "0")}`;
   outputContext.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
   outputContext.restore();
+  state.displayFrame = { capturedAt, latencyMs: 0, displayedAt: performance.now() };
+  publishMatchedPair(captureCanvas, outputCanvas, {
+    capturedAt,
+    latencyMs: 0,
+    style: selectedStyle,
+  });
   state.previewAnimation = requestAnimationFrame(renderPreview);
 }
 
@@ -471,13 +555,18 @@ async function startCloudSession(generation) {
     pendingTtlMs: CLOUD_PENDING_TTL_MS,
     capture: async () => {
       if (!isCurrentRun(generation) || !sourceIsReady()) return null;
+      const style = selectedStyle;
       drawSourceToCapture();
-      return { sourceDataUrl: captureCanvas.toDataURL("image/jpeg", FLUX_JPEG_QUALITY) };
+      return {
+        sourceDataUrl: captureCanvas.toDataURL("image/jpeg", FLUX_JPEG_QUALITY),
+        style,
+        prompt: STYLE_PROMPTS[style],
+      };
     },
-    send: ({ requestId, sourceDataUrl }) => {
+    send: ({ requestId, sourceDataUrl, prompt }) => {
       state.cloudConnection.send(buildFluxInput({
         imageUrl: sourceDataUrl,
-        prompt: STYLE_PROMPTS[selectedStyle],
+        prompt,
         requestId,
       }));
     },
@@ -558,9 +647,10 @@ function drainOutputBatch() {
 
 async function prepareOutputBatch(batch) {
   try {
-    const bitmaps = await Promise.all(batch.images.map((image) => rawImageBitmap(image)));
-    let source = null;
-    if (Number(strength.value) < 100) source = await dataUrlBitmap(batch.sourceDataUrl);
+    const [bitmaps, source] = await Promise.all([
+      Promise.all(batch.images.map((image) => rawImageBitmap(image))),
+      dataUrlBitmap(batch.sourceDataUrl),
+    ]);
     if (!isCurrentRun(batch.generation)) {
       bitmaps.forEach((bitmap) => bitmap.close());
       source?.close();
@@ -569,7 +659,7 @@ async function prepareOutputBatch(batch) {
     }
 
     state.activeOutput = { bitmaps, source };
-    paintCloudBitmap(bitmaps[0], source, batch);
+    paintCloudBitmap(bitmaps[0], source, batch, { publishPair: bitmaps.length === 1 });
     if (bitmaps.length === 1) {
       finishOutputBatch(batch.generation);
       return;
@@ -578,7 +668,9 @@ async function prepareOutputBatch(batch) {
     const delay = Math.max(45, Math.min(190, state.stats.nativeIntervalEwma / 2));
     state.outputTimer = setTimeout(() => {
       state.outputTimer = null;
-      if (isCurrentRun(batch.generation)) paintCloudBitmap(bitmaps.at(-1), source, batch);
+      if (isCurrentRun(batch.generation)) {
+        paintCloudBitmap(bitmaps.at(-1), source, batch, { publishPair: true });
+      }
       finishOutputBatch(batch.generation);
     }, delay);
   } catch (error) {
@@ -587,7 +679,7 @@ async function prepareOutputBatch(batch) {
   }
 }
 
-function paintCloudBitmap(generated, source, batch) {
+function paintCloudBitmap(generated, source, batch, { publishPair = false } = {}) {
   const effect = Number(strength.value) / 100;
   outputContext.save();
   outputContext.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
@@ -597,8 +689,22 @@ function paintCloudBitmap(generated, source, batch) {
   }
   outputContext.drawImage(generated, 0, 0, outputCanvas.width, outputCanvas.height);
   outputContext.restore();
+  if (publishPair) {
+    publishMatchedPair(source, generated, {
+      requestId: batch.requestId,
+      capturedAt: batch.capturedAt,
+      latencyMs: batch.latencyMs,
+      style: batch.style,
+    });
+  }
 
   const displayAge = performance.now() - batch.capturedAt;
+  state.displayFrame = {
+    capturedAt: batch.capturedAt,
+    latencyMs: batch.latencyMs,
+    displayedAt: performance.now(),
+    interpolated: !publishPair,
+  };
   state.stats.displayedFrames += 1;
   state.stats.displayedAges.push(displayAge);
   if (state.stats.displayedAges.length > 120) state.stats.displayedAges.shift();
@@ -659,7 +765,9 @@ async function configureLocalSession() {
 async function sendMacFrame(generation) {
   if (!isCurrentRun(generation) || state.inFlight || !sourceIsReady()) return;
   state.inFlight = true;
+  const style = selectedStyle;
   drawSourceToCapture();
+  const capturedAt = performance.now();
   const blob = await new Promise((resolve) => captureCanvas.toBlob(resolve, "image/jpeg", 0.8));
   if (!isCurrentRun(generation)) return;
   const controller = new AbortController();
@@ -674,14 +782,29 @@ async function sendMacFrame(generation) {
     });
     if (!response.ok) throw new Error(await readableError(response));
     const inferenceMs = Number(response.headers.get("X-Inference-Ms"));
-    const bitmap = await createImageBitmap(await response.blob());
+    const [bitmap, sourceBitmap] = await Promise.all([
+      createImageBitmap(await response.blob()),
+      createImageBitmap(blob),
+    ]);
     if (!isCurrentRun(generation)) {
       bitmap.close();
+      sourceBitmap.close();
       return;
     }
     outputContext.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
     outputContext.drawImage(bitmap, 0, 0, outputCanvas.width, outputCanvas.height);
+    state.displayFrame = {
+      capturedAt,
+      latencyMs: Number.isFinite(inferenceMs) ? inferenceMs : performance.now() - capturedAt,
+      displayedAt: performance.now(),
+    };
+    publishMatchedPair(sourceBitmap, outputCanvas, {
+      capturedAt,
+      latencyMs: Number.isFinite(inferenceMs) ? inferenceMs : performance.now() - capturedAt,
+      style,
+    });
     bitmap.close();
+    sourceBitmap.close();
     markGeneratedFrame(Number.isFinite(inferenceMs) ? `Mac · ${Math.round(inferenceMs)}ms` : "Mac · MPS");
   } catch (error) {
     if (error?.name !== "AbortError" && isCurrentRun(generation)) {
@@ -706,7 +829,7 @@ function markGeneratedFrame(label) {
   state.generatedFrames += 1;
   outputStatus.textContent = `${label} · ${state.generatedFrames} shown`;
   if (!state.firstOutput) {
-    const beginArmedRecording = state.recordingArmed;
+    const armedMode = state.recordingArmed;
     state.firstOutput = true;
     clearTimeout(state.startupTimer);
     state.startupTimer = null;
@@ -715,9 +838,9 @@ function markGeneratedFrame(label) {
     setMessage(state.mode === "cloud"
       ? "FLUX.2 is live. Capture continues while you scroll; stale frames are discarded automatically."
       : "The transformation is live. Only the newest source frame is processed.");
-    if (beginArmedRecording) {
-      state.recordingArmed = false;
-      startRecording();
+    if (shouldStartArmedRecording(armedMode, "display-frame")) {
+      state.recordingArmed = null;
+      beginRecording(armedMode);
     }
   }
 }
@@ -730,6 +853,10 @@ async function waitForSource() {
 async function startTransform() {
   if (state.running) {
     stopTransform();
+    return;
+  }
+  if (state.recording?.stopping) {
+    setMessage("Finish saving the current recording before starting another session.");
     return;
   }
 
@@ -746,6 +873,10 @@ async function startTransform() {
     state.generatedFrames = 0;
     state.firstOutput = false;
     state.inFlight = false;
+    state.recordingArmed = null;
+    state.displayFrame = null;
+    recordingMode.disabled = false;
+    resetMatchedPair();
     state.latestOutputBatch = null;
     state.outputBusy = false;
     studio.setAttribute("aria-busy", "true");
@@ -784,7 +915,8 @@ function stopTransform(message = "Transformation stopped.", tone = "normal", { s
   state.generation += 1;
   state.inFlight = false;
   state.cloudAccessCode = "";
-  state.recordingArmed = false;
+  state.recordingArmed = null;
+  recordingMode.disabled = false;
   state.cloudPump?.stop();
   state.cloudPump = null;
   state.latestOutputBatch = null;
@@ -803,7 +935,7 @@ function stopTransform(message = "Transformation stopped.", tone = "normal", { s
   state.sessionTimer = null;
   state.startupTimer = null;
   closeActiveOutput();
-  stopRecording(saveRecording);
+  stopRecording(saveRecording, { terminalMessage: { message, tone } });
   studio.setAttribute("aria-busy", "false");
   liveIndicator.hidden = true;
   recordButton.disabled = true;
@@ -865,16 +997,141 @@ function supportedRecordingType() {
   return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || "";
 }
 
-function drawRecordingFrame(recording) {
+function fillRecordingBackground(width, height) {
+  const gradient = recordingContext.createLinearGradient(0, 0, width, height);
+  gradient.addColorStop(0, "#e5d5c8");
+  gradient.addColorStop(0.55, "#d7c3b4");
+  gradient.addColorStop(1, "#c7ae9d");
+  recordingContext.fillStyle = gradient;
+  recordingContext.fillRect(0, 0, width, height);
+}
+
+function drawContainedRecordingMedia(media, x, y, width, height) {
+  const mediaSize = mediaDimensions(media, width, height);
+  const rect = containRect(mediaSize.width, mediaSize.height, x, y, width, height);
+  recordingContext.drawImage(
+    media,
+    rect.x,
+    rect.y,
+    rect.width,
+    rect.height,
+  );
+}
+
+function drawCompareCard(media, x, y, size, label) {
+  recordingContext.save();
+  recordingContext.shadowColor = "rgba(54,34,21,.25)";
+  recordingContext.shadowBlur = 30;
+  recordingContext.shadowOffsetY = 18;
+  recordingContext.fillStyle = "#f7eee4";
+  recordingContext.beginPath();
+  recordingContext.roundRect(x, y, size, size, 34);
+  recordingContext.fill();
+  recordingContext.restore();
+
+  recordingContext.save();
+  recordingContext.beginPath();
+  recordingContext.roundRect(x, y, size, size, 34);
+  recordingContext.clip();
+  recordingContext.fillStyle = "#d8c6b8";
+  recordingContext.fillRect(x, y, size, size);
+  drawContainedRecordingMedia(media, x + 14, y + 14, size - 28, size - 28);
+  recordingContext.restore();
+
+  recordingContext.fillStyle = "rgba(20,20,18,.76)";
+  recordingContext.beginPath();
+  recordingContext.roundRect(x + 24, y + 24, 244, 44, 22);
+  recordingContext.fill();
+  recordingContext.fillStyle = "#fffaf3";
+  recordingContext.font = "600 15px 'DM Mono', monospace";
+  recordingContext.textAlign = "left";
+  recordingContext.textBaseline = "middle";
+  recordingContext.fillText(label, x + 45, y + 46);
+}
+
+function drawRecordingHeader(title, badge) {
+  const width = recordingCanvas.width;
+  recordingContext.fillStyle = "rgba(20,20,18,.84)";
+  recordingContext.font = "700 25px 'DM Mono', monospace";
+  recordingContext.textAlign = "left";
+  recordingContext.textBaseline = "middle";
+  recordingContext.fillText(title, 64, 62);
+
+  const badgeWidth = 218;
+  const badgeX = width - 64 - badgeWidth;
+  recordingContext.fillStyle = "rgba(20,20,18,.68)";
+  recordingContext.beginPath();
+  recordingContext.roundRect(badgeX, 40, badgeWidth, 44, 22);
+  recordingContext.fill();
+  recordingContext.fillStyle = "#fffaf3";
+  recordingContext.font = "600 15px 'DM Mono', monospace";
+  recordingContext.fillText(badge, badgeX + 24, 62);
+}
+
+function drawLiveCompareRecordingFrame() {
+  const width = recordingCanvas.width;
+  const height = recordingCanvas.height;
+  fillRecordingBackground(width, height);
+  drawRecordingHeader("CLAY SCREEN / LIVE COMPARE", "●  SMOOTH CAPTURE");
+
+  const margin = 64;
+  const gap = 40;
+  const size = (width - margin * 2 - gap) / 2;
+  const y = 116;
+  let liveSource = captureCanvas;
+  if (sourceIsReady()) {
+    drawSourceToLiveRecording();
+    liveSource = liveSourceCanvas;
+  }
+  drawCompareCard(liveSource, margin, y, size, "SOURCE · LIVE");
+  drawCompareCard(outputCanvas, margin + size + gap, y, size, "OUTPUT · LIVE VIEW");
+
+  const capturedAt = Number(state.displayFrame?.capturedAt);
+  const outputAge = Number.isFinite(capturedAt) ? Math.max(0, performance.now() - capturedAt) : NaN;
+  const liveLabel = Number.isFinite(outputAge)
+    ? `LIVE SOURCE / DISPLAYED OUTPUT · ~${Math.round(outputAge)}MS OUTPUT AGE`
+    : "LIVE SOURCE / DISPLAYED OUTPUT";
+  recordingContext.fillStyle = "rgba(20,20,18,.64)";
+  recordingContext.font = "500 14px 'DM Mono', monospace";
+  recordingContext.textAlign = "left";
+  recordingContext.fillText(liveLabel, margin, 1038);
+  recordingContext.textAlign = "right";
+  recordingContext.fillText("1920 × 1080 · 30 FPS TARGET", width - margin, 1038);
+}
+
+function drawAuditRecordingFrame() {
+  const width = recordingCanvas.width;
+  const height = recordingCanvas.height;
+  fillRecordingBackground(width, height);
+  drawRecordingHeader("CLAY SCREEN / EXACT-PAIR AUDIT", "●  NATIVE PAIRS");
+
+  const margin = 64;
+  const gap = 40;
+  const size = (width - margin * 2 - gap) / 2;
+  const y = 116;
+  const pairStyle = state.matchedPair?.style || selectedStyle;
+  drawCompareCard(matchedSourceCanvas, margin, y, size, "SOURCE · EXACT INPUT");
+  drawCompareCard(matchedOutputCanvas, margin + size + gap, y, size, `OUTPUT · ${pairStyle.toUpperCase()}`);
+
+  const latency = Number(state.matchedPair?.latencyMs);
+  const resultLabel = state.mode === "preview" ? "PREVIEW RESULT" : "NATIVE RESULT";
+  const pairLabel = Number.isFinite(latency)
+    ? `EXACT SOURCE / ${resultLabel} · ${Math.round(latency)}MS ROUND TRIP`
+    : `EXACT SOURCE / ${resultLabel}`;
+  recordingContext.fillStyle = "rgba(20,20,18,.64)";
+  recordingContext.font = "500 14px 'DM Mono', monospace";
+  recordingContext.textAlign = "left";
+  recordingContext.fillText(pairLabel, margin, 1038);
+  recordingContext.textAlign = "right";
+  recordingContext.fillText("1920 × 1080", width - margin, 1038);
+}
+
+function drawOutputRecordingFrame() {
   const width = recordingCanvas.width;
   const height = recordingCanvas.height;
   const inset = 48;
   const size = width - inset * 2;
-  const gradient = recordingContext.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, "#e0cec0");
-  gradient.addColorStop(1, "#cbb5a6");
-  recordingContext.fillStyle = gradient;
-  recordingContext.fillRect(0, 0, width, height);
+  fillRecordingBackground(width, height);
 
   recordingContext.save();
   recordingContext.shadowColor = "rgba(54,34,21,.28)";
@@ -908,53 +1165,104 @@ function drawRecordingFrame(recording) {
   recordingContext.textAlign = "left";
   recordingContext.textBaseline = "middle";
   recordingContext.fillText("●  CLAY SCREEN / LIVE", 94, 95);
+}
 
+function drawRecordingFrame(recording) {
+  if (recording.mode === "live") drawLiveCompareRecordingFrame();
+  else if (recording.mode === "audit" || recording.mode === "compare") drawAuditRecordingFrame();
+  else drawOutputRecordingFrame();
   const elapsed = Math.floor((performance.now() - recording.startedAt) / 1000);
   recordButton.textContent = `Stop · ${elapsed}s`;
 }
 
+function resetRecordingControls(recording = null) {
+  if (recording && state.recording !== recording) return false;
+  if (recording) state.recording = null;
+  state.recordingArmed = null;
+  recordingMode.disabled = false;
+  recordButton.disabled = !state.running;
+  recordButton.textContent = "Record";
+  recordButton.setAttribute("aria-pressed", "false");
+  return true;
+}
+
 function startRecording() {
   if (state.recording) {
-    stopRecording(true);
+    if (!state.recording.stopping) stopRecording(true);
     return;
   }
   if (state.recordingArmed) {
-    state.recordingArmed = false;
+    state.recordingArmed = null;
+    recordingMode.disabled = false;
     recordButton.textContent = "Record";
     recordButton.setAttribute("aria-pressed", "false");
     setMessage("Recording is no longer armed.");
     return;
   }
-  if (!state.firstOutput) {
-    if (!state.running) return;
-    state.recordingArmed = true;
+  if (!state.running) return;
+
+  const preset = recordingPreset(recordingMode.value);
+  const ready = recordingIsReady(preset.mode, {
+    firstOutput: state.firstOutput,
+    matchedPairReady: state.matchedPairReady,
+  });
+  if (!ready) {
+    state.recordingArmed = preset.mode;
+    recordingMode.disabled = true;
     recordButton.textContent = "Recording armed";
     recordButton.setAttribute("aria-pressed", "true");
-    setMessage("Recording armed. The clean 1080×1080 take will begin on the first generated frame.");
+    const armedMessage = preset.mode === "audit" || preset.mode === "compare"
+      ? "Exact-pair audit armed. It will begin on the first native source/result pair."
+      : preset.mode === "live"
+        ? "Live compare armed. It will begin on the first displayed generated frame."
+        : "Output recording armed. It will begin on the first generated frame.";
+    setMessage(armedMessage);
     return;
   }
+  beginRecording(preset.mode);
+}
+
+function beginRecording(mode) {
+  const preset = recordingPreset(mode);
   if (typeof MediaRecorder === "undefined" || !recordingCanvas.captureStream) {
     setMessage("This browser cannot record the generated canvas.", "error");
+    resetRecordingControls();
     return;
   }
 
+  recordingCanvas.width = preset.width;
+  recordingCanvas.height = preset.height;
   const mimeType = supportedRecordingType();
   const chunks = [];
   const recording = {
+    mode: preset.mode,
     recorder: null,
     chunks,
     save: true,
+    stopping: false,
     renderTimer: null,
     startedAt: performance.now(),
   };
-  drawRecordingFrame(recording);
-  const stream = recordingCanvas.captureStream(30);
-  const recorder = new MediaRecorder(stream, buildRecordingOptions({
-    mimeType,
-    cloud: state.mode === "cloud",
-  }));
+  let stream;
+  let recorder;
+  try {
+    drawRecordingFrame(recording);
+    stream = recordingCanvas.captureStream(30);
+    recorder = new MediaRecorder(stream, buildRecordingOptions({
+      mimeType,
+      cloud: state.mode === "cloud",
+      compare: preset.width !== preset.height,
+    }));
+  } catch (error) {
+    stream?.getTracks().forEach((track) => track.stop());
+    resetRecordingControls();
+    setMessage(error.message || "This browser could not start recording.", "error");
+    return;
+  }
   recording.recorder = recorder;
+  recording.stream = stream;
   state.recording = recording;
+  recordingMode.disabled = true;
   recordButton.setAttribute("aria-pressed", "true");
   recordButton.textContent = "Stop · 0s";
 
@@ -963,34 +1271,73 @@ function startRecording() {
   });
   recorder.addEventListener("stop", () => {
     stream.getTracks().forEach((track) => track.stop());
-    if (recording.save && chunks.length) {
+    const saved = recording.save && chunks.length > 0;
+    if (saved) {
       const type = recorder.mimeType || mimeType || "video/webm";
       const extension = type.includes("mp4") ? "mp4" : "webm";
       const output = new Blob(chunks, { type });
       const url = URL.createObjectURL(output);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `clay-screen-${Date.now()}.${extension}`;
+      link.download = `clay-screen-${recording.mode}-${Date.now()}.${extension}`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setMessage("1080×1080 recording saved. The bounded session is stopped and the take uses a steady 30 fps presentation cadence.");
+      const savedMessage = recording.mode === "live"
+        ? "1920×1080 live compare saved with the smooth displayed output."
+        : recording.mode === "audit" || recording.mode === "compare"
+          ? "1920×1080 exact-pair audit saved. Native holds are expected in this mode."
+          : "1080×1080 output recording saved with a 30 fps presentation target.";
+      if (!recording.terminalMessage) setMessage(savedMessage);
     }
-    recordButton.textContent = "Record";
-    recordButton.setAttribute("aria-pressed", "false");
+    if (recording.terminalMessage) {
+      const suffix = saved ? " Recording saved." : "";
+      setMessage(`${recording.terminalMessage.message}${suffix}`, recording.terminalMessage.tone);
+    }
+    resetRecordingControls(recording);
   });
 
-  recorder.start(250);
+  recorder.addEventListener("error", (event) => {
+    recording.save = false;
+    clearInterval(recording.renderTimer);
+    stream.getTracks().forEach((track) => track.stop());
+    if (resetRecordingControls(recording)) {
+      setMessage(event.error?.message || "Recording failed in this browser.", "error");
+    }
+  }, { once: true });
+
+  try {
+    recorder.start(250);
+  } catch (error) {
+    recording.save = false;
+    stream.getTracks().forEach((track) => track.stop());
+    resetRecordingControls(recording);
+    setMessage(error.message || "This browser could not start recording.", "error");
+    return;
+  }
   recording.renderTimer = setInterval(() => drawRecordingFrame(recording), 1000 / 30);
-  setMessage("Recording the clean generated stage. Click Record again to stop, or let the bounded session finish.");
+  const startedMessage = recording.mode === "live"
+    ? "Recording the moving source and the same interpolated output shown live."
+    : recording.mode === "audit" || recording.mode === "compare"
+      ? "Recording exact native source/result pairs for auditing."
+      : "Recording the clean 1080×1080 generated stage.";
+  setMessage(startedMessage);
 }
 
-function stopRecording(save = true) {
+function stopRecording(save = true, { terminalMessage = null } = {}) {
   const recording = state.recording;
   if (!recording) return;
-  state.recording = null;
   recording.save = recording.save && save;
+  if (terminalMessage) recording.terminalMessage = terminalMessage;
+  if (recording.stopping) return;
+  recording.stopping = true;
   clearInterval(recording.renderTimer);
+  recordButton.disabled = true;
+  recordButton.textContent = save ? "Saving…" : "Stopping…";
   if (recording.recorder.state === "recording") recording.recorder.stop();
+  else {
+    recording.stream?.getTracks().forEach((track) => track.stop());
+    resetRecordingControls(recording);
+  }
 }
 
 $$(".source-button").forEach((button) => button.addEventListener("click", async () => {

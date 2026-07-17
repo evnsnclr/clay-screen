@@ -21,7 +21,7 @@
       href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="static/styles.css?v=0.3.4" />
+    <link rel="stylesheet" href="static/styles.css?v=0.3.7" />
   </head>
   <body>
     <div class="grain" aria-hidden="true"></div>
@@ -138,6 +138,15 @@
             </div>
           </label>
 
+          <label class="control-group recording-control" for="recordingMode">
+            <span class="control-title">Recording</span>
+            <select id="recordingMode">
+              <option value="live" selected>Live compare · smooth</option>
+              <option value="audit">Exact pairs · audit</option>
+              <option value="output">Output · square</option>
+            </select>
+          </label>
+
           <form id="accessControl" class="control-group access-control" hidden>
             <label for="accessCode">
               <span class="control-title">Local access code</span>
@@ -209,7 +218,10 @@
     </footer>
 
     <canvas id="captureCanvas" width="704" height="704" hidden></canvas>
-    <canvas id="recordingCanvas" width="1080" height="1080" hidden></canvas>
-    <script type="module" src="static/app.js?v=0.3.4"></script>
+    <canvas id="liveSourceCanvas" width="704" height="704" hidden></canvas>
+    <canvas id="matchedSourceCanvas" width="704" height="704" hidden></canvas>
+    <canvas id="matchedOutputCanvas" width="768" height="768" hidden></canvas>
+    <canvas id="recordingCanvas" width="1920" height="1080" hidden></canvas>
+    <script type="module" src="static/app.js?v=0.3.8"></script>
   </body>
 </html>

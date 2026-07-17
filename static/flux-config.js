@@ -23,8 +23,11 @@ export function availableRealRuntimes(health = {}) {
   return ["cloud", "local"].filter((name) => runtimes[name]?.available);
 }
 
-export function buildRecordingOptions({ mimeType = "", cloud = false } = {}) {
-  const options = { videoBitsPerSecond: cloud ? 12_000_000 : 6_000_000 };
+export function buildRecordingOptions({ mimeType = "", cloud = false, compare = false } = {}) {
+  const videoBitsPerSecond = compare
+    ? (cloud ? 16_000_000 : 12_000_000)
+    : (cloud ? 12_000_000 : 6_000_000);
+  const options = { videoBitsPerSecond };
   if (mimeType) options.mimeType = mimeType;
   return options;
 }

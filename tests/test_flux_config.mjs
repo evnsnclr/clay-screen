@@ -18,6 +18,13 @@ import {
   buildRecordingOptions,
   chooseRuntime,
 } from "../static/flux-config.js";
+import {
+  containRect,
+  recordingIsReady,
+  recordingPreset,
+  shouldPublishPair,
+  shouldStartArmedRecording,
+} from "../static/recording-layout.js";
 
 test("cloud is preferred when it is available", () => {
   const health = {
@@ -43,6 +50,64 @@ test("recording options request a high-quality bitrate", () => {
   assert.deepEqual(buildRecordingOptions(), {
     videoBitsPerSecond: 6_000_000,
   });
+  assert.deepEqual(buildRecordingOptions({ mimeType: "video/webm", cloud: true, compare: true }), {
+    mimeType: "video/webm",
+    videoBitsPerSecond: 16_000_000,
+  });
+});
+
+test("recording presets keep showcase and audit landscape while output stays square", () => {
+  assert.deepEqual(recordingPreset("live"), {
+    mode: "live",
+    width: 1920,
+    height: 1080,
+    label: "Live compare · smooth",
+  });
+  assert.equal(recordingPreset("audit").label, "Exact pairs · audit");
+  assert.equal(recordingPreset("compare").mode, "compare");
+  assert.equal(recordingPreset("output").width, 1080);
+  assert.equal(recordingPreset("output").height, 1080);
+  assert.equal(recordingPreset("unknown").mode, "live");
+});
+
+test("recording media is contained without cropping", () => {
+  assert.deepEqual(containRect(100, 100, 0, 0, 200, 100), {
+    x: 50,
+    y: 0,
+    width: 100,
+    height: 100,
+  });
+  assert.deepEqual(containRect(160, 90, 10, 20, 320, 320), {
+    x: 10,
+    y: 90,
+    width: 320,
+    height: 180,
+  });
+  assert.deepEqual(containRect(90, 160, 0, 0, 320, 320), {
+    x: 70,
+    y: 0,
+    width: 180,
+    height: 320,
+  });
+});
+
+test("live recording starts on displayed output while audit waits for a matched native pair", () => {
+  assert.equal(recordingIsReady("live", { firstOutput: true, matchedPairReady: false }), true);
+  assert.equal(recordingIsReady("audit", { firstOutput: true, matchedPairReady: false }), false);
+  assert.equal(recordingIsReady("audit", { firstOutput: true, matchedPairReady: true }), true);
+  assert.equal(recordingIsReady("output", { firstOutput: true, matchedPairReady: false }), true);
+  assert.equal(shouldStartArmedRecording("live", "display-frame"), true);
+  assert.equal(shouldStartArmedRecording("live", "matched-pair"), false);
+  assert.equal(shouldStartArmedRecording("audit", "display-frame"), false);
+  assert.equal(shouldStartArmedRecording("audit", "matched-pair"), true);
+  assert.equal(shouldStartArmedRecording("output", "display-frame"), true);
+});
+
+test("matched-pair publication never moves backward in source time", () => {
+  assert.equal(shouldPublishPair(undefined, 100), true);
+  assert.equal(shouldPublishPair(100, 100), true);
+  assert.equal(shouldPublishPair(100, 101), true);
+  assert.equal(shouldPublishPair(101, 100), false);
 });
 
 test("the browser SDK, package lock input, and attribution stay on one version", () => {

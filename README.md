@@ -71,14 +71,21 @@ realtime token.
 
 1. Choose **Demo** and **Clay** at 100%.
 2. Enter the access code from `.env.local` and press **Start transforming**.
-3. Press **Record** immediately. It will arm itself, begin on the first real
-   FLUX.2 frame, and stop safely when the 15-second session ends.
-4. Open the saved 1080×1080 recording, or use the **Showcase** button for a clean
-   full-window presentation while the session is live.
+3. Leave **Recording** on **Live compare · smooth**, then press **Record**. It
+   captures the continuously moving source beside the same interpolated output
+   visible in the app.
+4. Open the saved 1920×1080 comparison, or choose **Output · square** before
+   recording for a clean 1080×1080 generated-only take. Use **Exact pairs ·
+   audit** only when you need to inspect the precise native source/result pairs.
 
 Recording is a manual toggle, not a fixed ten-second timer. It uses a dedicated
-30 fps presentation canvas and requests a 12 Mbps bitrate, so inference pauses
-do not create a malformed variable-cadence master.
+presentation canvas targeting 30 fps and requests up to 16 Mbps for landscape
+modes. Live compare records the moving source and every displayed output update,
+including RIFE interpolation; its footer shows the current output age so the
+model delay is explicit. Exact-pair audit instead pairs the precise JPEG sent to
+FLUX.2 with its unblended native result. That audit mode intentionally excludes
+RIFE frames and will therefore look less fluid. Normalize the browser WebM below
+before posting to guarantee a constant-frame-rate master.
 
 ## Transform and scroll a real browser tab
 
@@ -119,15 +126,17 @@ and p95 displayed-frame age during each live run.
 
 ## Normalize a browser recording
 
-Chrome normally saves VP9 WebM. Convert it to a seekable, broadly compatible
-MP4 before posting:
+Chrome normally saves VP9 WebM with browser timestamps. Convert the default
+1920×1080 live comparison to a constant-frame-rate, seekable MP4 before posting:
 
 ```bash
-ffmpeg -i clay-screen-recording.webm \
-  -vf "fps=30,scale=1080:1080:flags=lanczos" \
+ffmpeg -i clay-screen-live.webm \
+  -vf "fps=30,scale=1920:1080:flags=lanczos" \
   -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p \
-  -movflags +faststart -an clay-screen-demo.mp4
+  -movflags +faststart -an clay-screen-live.mp4
 ```
+
+For **Output · square**, change both dimensions back to `1080:1080`.
 
 Do not use frame-rate conversion to hide a poor live run. The built-in badge
 and the validation receipt distinguish encoded cadence from actual generated

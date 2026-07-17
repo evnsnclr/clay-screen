@@ -37,6 +37,33 @@ those long gaps occupied 88.6% of the timeline. The final release recording has
 no encoded gap above 68 ms. Pixel-level freeze detection after its first warm-up
 frame found 78 holds averaging 129 ms and topping out at 167 ms.
 
+## Live compare recorder fix
+
+The first side-by-side recorder was an audit view, not a showcase view. Although
+its WebM contained about 30 encoded frames per second, both panels advanced only
+when a native source/result pair arrived. In the checked Google Earth take, the
+source had 26 distinct frames (2.14 fps) and the result had 31 (2.55 fps) across
+12.14 seconds. Repeated holds made the download look much worse than the app.
+
+The default **Live compare · smooth** mode now records the continuously framed
+source beside the actual displayed output canvas, including RIFE frames. The
+original behavior remains available as **Exact pairs · audit** and stores the
+unblended native result.
+
+One capped real-FLUX recording of the corrected path produced:
+
+- 384 VP9 frames over 12.804 seconds: 1920×1080 at 29.91 effective encoded fps.
+- 384 distinct source-panel frames and 102 distinct generated-panel frames.
+- About 7.97 visible generated updates per second versus 3.8 native results per
+  second in the end-of-run diagnostics.
+- A normalized H.264 master with 385 frames at constant 30/1 fps, 12.833 seconds,
+  and a 4.48 MB file size.
+
+The motion probe crops each panel before running `mpdecimate`; measuring the
+whole compositor would let a moving source hide a frozen result. The generated
+side cleared the acceptance gate of at least 6 visible updates per second and
+at least 1.5× the measured native cadence.
+
 ## Final paid run
 
 The tracked public artifacts are:
@@ -61,13 +88,13 @@ the 15-second safety cap:
 - The 0.95 output-feedback setting allowed the map and cards to move while the
   fixed seed and RIFE pair retained visual continuity.
 
-Four bounded 15-second iterations were purchased while diagnosing queueing,
+Six bounded 15-second iterations were purchased while diagnosing queueing,
 validating the latest-frame-wins scheduler, increasing source motion, and
-capturing the final take. At the listed rate of $0.00194 per compute-second,
+capturing the output-only and live-compare takes. At the listed rate of $0.00194 per compute-second,
 their combined rate-times-cap ceiling is:
 
 ```text
-4 × 15 × $0.00194 = $0.1164
+6 × 15 × $0.00194 = $0.1746
 ```
 
 This is a conservative maximum estimate, not a billing-dashboard receipt. No
@@ -96,16 +123,16 @@ This keeps motion observable without purchasing or displaying stale work.
 | Gate | Result |
 |---|---|
 | Python tests | pass; 12 tests |
-| JavaScript syntax and tests | pass; 14 tests |
+| JavaScript syntax and tests | pass; 18 tests |
 | Independent capture before result | pass |
 | Latest-frame-wins dispatch | pass |
 | Out-of-order request correlation | pass |
 | Bounded pending storage | pass |
 | Stop after delayed capture or WebSocket handshake | pass |
 | Absolute 15-second deadline | pass |
-| Free Chrome UI pass | pass; Demo, Start/Stop, Showcase, armed recording, and save |
+| Free Chrome UI pass | pass; Demo, Start/Stop, Showcase, live/audit selection, rapid-stop gate, and save |
 | Real FLUX.2 moving-source run | pass |
-| Manual recording | pass; 1080×1080 steady presentation cadence |
+| Manual recording | pass; 1920×1080 live compare at 29.91 encoded fps and 7.97 generated updates/s |
 | Missing key and wrong code | fail closed |
 | Exact fal model allowlist | pass |
 | Token response caching | disabled with `Cache-Control: no-store` |
