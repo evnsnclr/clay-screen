@@ -3,7 +3,7 @@
 Turn a browser tab, camera, or video into a responsive handmade world with
 [FLUX.2 [klein] Realtime](https://fal.ai/models/fal-ai/flux-2/klein/realtime).
 
-[Watch the 14-second MP4](assets/clay-screen-demo.mp4) ·
+[Watch the 23-second MP4](assets/clay-screen-demo.mp4) ·
 [Validation receipt](VALIDATION.md) ·
 [Research notes](RESEARCH_AND_BUILD_PLAN.md)
 
@@ -13,22 +13,18 @@ or owner-funded public inference endpoint.
 
 ## Real FLUX.2 demo
 
-[![Clay Screen transforming a moving map and scrolling gallery](assets/clay-screen-demo.gif)](assets/clay-screen-demo.mp4)
+[![Clay Screen transforming live maps and a scrolling gallery](assets/clay-screen-demo.gif)](assets/clay-screen-demo.mp4)
 
 This is an actual FLUX.2 run recorded by Clay Screen—not a design mockup. The
-built-in source performs a whole-map pan and zoom, cuts to a colorful gallery,
-and scrolls new rows through the viewport.
+video opens in **Live compare · smooth** so the moving source and displayed
+output remain visible together across a scrolling gallery and several map
+zooms, then finishes with a clean generated-only clay interface.
 
-The release take is a 14-second, 1080×1080 H.264 MP4 at a constant 30 fps. The
-live run sampled the moving source at 10 fps, returned about 4 native FLUX.2
-results per second, and presented about 8 frames per second with RIFE. After
-warm-up, generated-frame holds averaged 129 ms and never exceeded 167 ms. The
-original broken recording froze for roughly 353 ms at a time.
-
-The result now tracks large motion convincingly and has a cleaner output-only
-stage than the inspiration. It still does not claim Ryan Stephen's reported
-roughly 20 generated fps or the original map's fine detail. See the
-[direct comparison](VALIDATION.md#comparison-with-the-original-demo).
+The showcase is a 22.89-second, 1920×1080 H.264 MP4 at a constant 29.97 fps.
+It preserves the recorded timing: no speed ramp or post-production optical-flow
+frames were added. This is an edited showcase rather than an exact-pair audit or
+an inference-fps benchmark; see the [validation receipt](VALIDATION.md) for the
+measured recorder evidence and the retained output-only validation take.
 
 ## Run locally
 

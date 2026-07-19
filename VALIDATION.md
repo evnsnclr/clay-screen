@@ -1,6 +1,6 @@
 # Validation receipt
 
-Updated July 16, 2026.
+Updated July 18, 2026.
 
 ## Release verdict
 
@@ -15,7 +15,12 @@ described as a convincing independent implementation, not frame-rate parity.
 
 ## Direct video comparison
 
-| Signal | Original user recording | Current Clay Screen release | Ryan Stephen demo |
+The measurements below refer to the retained 14-second output-only validation
+take. The README now leads with a separate 22.89-second showcase assembled from
+the strongest live-compare and generated-only recordings; it is not used to
+claim a new native inference cadence.
+
+| Signal | Original user recording | Validated output-only take | Ryan Stephen demo |
 |---|---:|---:|---:|
 | Duration | 9.954 s inferred | 14.000 s | 14.000 s |
 | Public master | 768×768 VP9 WebM | 1080×1080 H.264 MP4 | 2156×2160 H.264 MP4 |
@@ -68,15 +73,17 @@ at least 1.5× the measured native cadence.
 
 The tracked public artifacts are:
 
-- [`assets/clay-screen-demo.mp4`](assets/clay-screen-demo.mp4): 14.000 s,
+- [`assets/clay-screen-demo.mp4`](assets/clay-screen-demo.mp4): 22.889 s,
+  1920×1080, H.264, 30000/1001 fps, 686 frames, fast-start showcase MP4.
+- [`assets/clay-screen-output-only-demo.mp4`](assets/clay-screen-output-only-demo.mp4): 14.000 s,
   1080×1080, H.264, 30/1 fps, 420 frames, fast-start MP4.
-- [`assets/clay-screen-demo.gif`](assets/clay-screen-demo.gif): reduced preview
-  for the README.
+- [`assets/clay-screen-demo.gif`](assets/clay-screen-demo.gif): reduced animated
+  preview of the new showcase for the README.
 - [`assets/flux2-smoke-result.jpg`](assets/flux2-smoke-result.jpg): still from
   the gallery-scroll phase.
 
-The source recording was produced automatically from the first real result to
-the 15-second safety cap:
+The retained output-only source recording was produced automatically from the
+first real result to the 15-second safety cap:
 
 - Browser WebM: 14.124 s inferred, 1080×1080 VP9, 424 frames, 29.95 effective
   fps, maximum encoded frame gap 68 ms.

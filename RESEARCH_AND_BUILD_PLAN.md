@@ -128,9 +128,12 @@ change; users should check the
 
 ## Current result and honest limit
 
-The final tracked demo is 14 seconds, 1080×1080, constant 30 fps H.264. The
-generated image now shows unmistakable map movement and gallery scrolling, and
-post-warm-up holds average 129 ms instead of 353 ms.
+The retained validation take is 14 seconds, 1080×1080, constant 30 fps H.264.
+Its generated image shows unmistakable map movement and gallery scrolling, and
+post-warm-up holds average 129 ms instead of 353 ms. The README showcase was
+updated on July 18 to a separate 22.89-second, 1920×1080 live-compare edit; its
+purpose is presentation, while the retained take remains the measurement
+artifact.
 
 The clean framing and output-only recording improve on the failed capture and
 avoid exposing the user's whole desktop. Ryan's original still has finer map
