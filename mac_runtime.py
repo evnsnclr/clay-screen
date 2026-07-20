@@ -52,7 +52,7 @@ class MacDiffusionEngine:
 
         if not torch.backends.mps.is_available():
             raise RuntimeError(
-                "Apple MPS is unavailable. Clay Screen's AI mode requires an Apple Silicon Mac."
+                "Apple MPS is unavailable. SurfaceShift's local AI mode requires an Apple Silicon Mac."
             )
 
         device = torch.device("mps")

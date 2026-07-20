@@ -3,10 +3,15 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
+  CLOUD_CAPTURE_INTERVAL_MS,
+  CLOUD_PENDING_LIMIT,
+  CLOUD_PENDING_TTL_MS,
   CLOUD_STARTUP_TIMEOUT_MS,
-  CLOUD_SESSION_LIMIT_MS,
+  CLOUD_SESSION_LIMITS,
   FAL_CLIENT_URL,
   FAL_MODEL,
+  DEFAULT_CLOUD_SESSION_LIMIT_MS,
+  FAL_PRICE_PER_SECOND,
   FLUX_INPUT_SIZE,
   FLUX_JPEG_QUALITY,
   FLUX_OUTPUT_SIZE,
@@ -14,7 +19,16 @@ import {
   buildFluxInput,
   buildRecordingOptions,
   chooseRuntime,
+  estimateCloudSessionCost,
+  normalizeCloudSessionLimit,
 } from "../static/flux-config.js";
+import {
+  containRect,
+  recordingIsReady,
+  recordingPreset,
+  shouldPublishPair,
+  shouldStartArmedRecording,
+} from "../static/recording-layout.js";
 
 test("cloud is preferred when it is available", () => {
   const health = {
@@ -35,11 +49,69 @@ test("local and preview are safe fallbacks", () => {
 test("recording options request a high-quality bitrate", () => {
   assert.deepEqual(buildRecordingOptions({ mimeType: "video/mp4", cloud: true }), {
     mimeType: "video/mp4",
-    videoBitsPerSecond: 8_000_000,
+    videoBitsPerSecond: 12_000_000,
   });
   assert.deepEqual(buildRecordingOptions(), {
-    videoBitsPerSecond: 4_000_000,
+    videoBitsPerSecond: 6_000_000,
   });
+  assert.deepEqual(buildRecordingOptions({ mimeType: "video/webm", cloud: true, compare: true }), {
+    mimeType: "video/webm",
+    videoBitsPerSecond: 16_000_000,
+  });
+});
+
+test("recording presets keep showcase and audit landscape while output stays square", () => {
+  assert.deepEqual(recordingPreset("live"), {
+    mode: "live",
+    width: 1920,
+    height: 1080,
+    label: "Compare · live source + output",
+  });
+  assert.equal(recordingPreset("audit").label, "Lab · exact native pairs");
+  assert.equal(recordingPreset("compare").mode, "compare");
+  assert.equal(recordingPreset("output").width, 1080);
+  assert.equal(recordingPreset("output").height, 1080);
+  assert.equal(recordingPreset("unknown").mode, "live");
+});
+
+test("recording media is contained without cropping", () => {
+  assert.deepEqual(containRect(100, 100, 0, 0, 200, 100), {
+    x: 50,
+    y: 0,
+    width: 100,
+    height: 100,
+  });
+  assert.deepEqual(containRect(160, 90, 10, 20, 320, 320), {
+    x: 10,
+    y: 90,
+    width: 320,
+    height: 180,
+  });
+  assert.deepEqual(containRect(90, 160, 0, 0, 320, 320), {
+    x: 70,
+    y: 0,
+    width: 180,
+    height: 320,
+  });
+});
+
+test("live recording starts on displayed output while audit waits for a matched native pair", () => {
+  assert.equal(recordingIsReady("live", { firstOutput: true, matchedPairReady: false }), true);
+  assert.equal(recordingIsReady("audit", { firstOutput: true, matchedPairReady: false }), false);
+  assert.equal(recordingIsReady("audit", { firstOutput: true, matchedPairReady: true }), true);
+  assert.equal(recordingIsReady("output", { firstOutput: true, matchedPairReady: false }), true);
+  assert.equal(shouldStartArmedRecording("live", "display-frame"), true);
+  assert.equal(shouldStartArmedRecording("live", "matched-pair"), false);
+  assert.equal(shouldStartArmedRecording("audit", "display-frame"), false);
+  assert.equal(shouldStartArmedRecording("audit", "matched-pair"), true);
+  assert.equal(shouldStartArmedRecording("output", "display-frame"), true);
+});
+
+test("matched-pair publication never moves backward in source time", () => {
+  assert.equal(shouldPublishPair(undefined, 100), true);
+  assert.equal(shouldPublishPair(100, 100), true);
+  assert.equal(shouldPublishPair(100, 101), true);
+  assert.equal(shouldPublishPair(101, 100), false);
 });
 
 test("the browser SDK, package lock input, and attribution stay on one version", () => {
@@ -63,8 +135,13 @@ test("FLUX request uses the documented realtime settings", () => {
   assert.equal(FLUX_INPUT_SIZE, 704);
   assert.equal(FLUX_OUTPUT_SIZE, 768);
   assert.equal(FLUX_JPEG_QUALITY, 0.5);
+  assert.equal(CLOUD_CAPTURE_INTERVAL_MS, 100);
+  assert.equal(CLOUD_PENDING_LIMIT, 16);
+  assert.equal(CLOUD_PENDING_TTL_MS, 5_000);
   assert.equal(CLOUD_STARTUP_TIMEOUT_MS, 10_000);
-  assert.equal(CLOUD_SESSION_LIMIT_MS, 15_000);
+  assert.deepEqual(CLOUD_SESSION_LIMITS, [15_000, 45_000, 90_000]);
+  assert.equal(DEFAULT_CLOUD_SESSION_LIMIT_MS, 45_000);
+  assert.equal(FAL_PRICE_PER_SECOND, 0.00194);
   assert.deepEqual(request, {
     image_url: "data:image/jpeg;base64,frame",
     prompt: "handmade clay",
@@ -74,8 +151,16 @@ test("FLUX request uses the documented realtime settings", () => {
     schedule_mu: 2.3,
     image_size: "square",
     enable_interpolation: true,
-    output_feedback_strength: 0.9,
+    output_feedback_strength: 0.95,
   });
+});
+
+test("cloud session budgets accept only bounded presets and expose the estimate", () => {
+  assert.equal(normalizeCloudSessionLimit("15000"), 15_000);
+  assert.equal(normalizeCloudSessionLimit(90_000), 90_000);
+  assert.equal(normalizeCloudSessionLimit(999_999), 45_000);
+  assert.equal(estimateCloudSessionCost(15_000), 0.0291);
+  assert.equal(estimateCloudSessionCost(45_000), 0.0873);
 });
 
 test("FLUX request rejects incomplete input", () => {

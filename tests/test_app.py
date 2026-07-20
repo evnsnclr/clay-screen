@@ -200,15 +200,32 @@ def test_ui_contract_is_present():
         'data-source="screen"',
         'data-source="camera"',
         'data-source="video"',
+        'data-source="demo"',
         'data-style="clay"',
         'id="recordButton"',
+        'id="recordingMode"',
+        '<option value="output">Create · clean output</option>',
+        '<option value="live" selected>Compare · live source + output</option>',
+        '<option value="audit">Lab · exact native pairs</option>',
+        'id="sessionBudget"',
+        'value="45000" selected',
+        'id="showcaseButton"',
+        'id="liveSourceCanvas"',
+        'id="matchedSourceCanvas"',
+        'id="matchedOutputCanvas"',
         "sends sampled frames to fal.ai",
         'id="accessCode"',
     ):
         assert expected in html
 
     assert "getDisplayMedia" in javascript
+    assert "CaptureController" in javascript
+    assert "CloudFramePump" in javascript
     assert "MediaRecorder" in javascript
+    assert 'drawSourceToLiveRecording()' in javascript
+    assert 'drawCompareCard(liveSource' in javascript
+    assert 'drawCompareCard(outputCanvas' in javascript
+    assert 'drawCompareCard(matchedOutputCanvas' in javascript
     assert "fal-ai/flux-2/klein/realtime" not in html
     assert "FAL_MODEL" in javascript
     assert "CLAY_SCREEN" not in javascript

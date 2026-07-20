@@ -1,108 +1,171 @@
 # Validation receipt
 
-Updated July 15, 2026.
+Updated July 18, 2026.
 
-## Current release gates
+## Release verdict
+
+SurfaceShift now follows meaningful motion and is ready for a public recorded
+demo. It is no longer equivalent to the original broken clip, which processed
+isolated screenshots and froze for roughly a third of a second between bursts.
+
+It is not an exact performance clone of Ryan Stephen's demo. The current fal
+session returned about 4 native FLUX.2 results per second and about 8 presented
+frames per second with RIFE; Ryan reported roughly 20 fps. The release is
+described as a convincing independent implementation, not frame-rate parity.
+
+## Direct video comparison
+
+The measurements below refer to the retained 14-second output-only validation
+take. The README now leads with a separate 22.89-second showcase assembled from
+the strongest live-compare and generated-only recordings; it is not used to
+claim a new native inference cadence.
+
+| Signal | Original user recording | Validated output-only take | Ryan Stephen demo |
+|---|---:|---:|---:|
+| Duration | 9.954 s inferred | 14.000 s | 14.000 s |
+| Public master | 768×768 VP9 WebM | 1080×1080 H.264 MP4 | 2156×2160 H.264 MP4 |
+| Encoded cadence | 51 frames, 5.12 fps | 420 frames, constant 30 fps | 840 frames, constant 60 fps |
+| Native generated cadence | about 2.61 results/s | about 4.0 results/s | about 20 fps reported by creator |
+| Presented generated cadence | about 5.12 fps | about 8.0 fps with RIFE | not independently instrumented |
+| Post-warm-up holds | 352.8 ms mean, 376 ms max | 129 ms mean, 167 ms max | not measured from internal frames |
+| One-second SSIM | 0.902 | 0.807 | 0.699 |
+| Motion | nested desktop barely changes | whole-map pan/zoom and gallery scroll | detailed map pan/zoom and gallery scroll |
+
+The one-second SSIM is used only as a coarse motion signal: a lower value means
+more visible structural change across one second, not better image quality. The
+release is materially closer to the original's motion range while preserving a
+stable tactile composition.
+
+The original user WebM arrived in 26 two-frame bursts. The short gaps averaged
+45.3 ms, but each pair was followed by a 324–376 ms freeze averaging 352.8 ms;
+those long gaps occupied 88.6% of the timeline. The final release recording has
+no encoded gap above 68 ms. Pixel-level freeze detection after its first warm-up
+frame found 78 holds averaging 129 ms and topping out at 167 ms.
+
+## Compare recorder fix
+
+The first side-by-side recorder was an audit view, not a showcase view. Although
+its WebM contained about 30 encoded frames per second, both panels advanced only
+when a native source/result pair arrived. In the checked Google Earth take, the
+source had 26 distinct frames (2.14 fps) and the result had 31 (2.55 fps) across
+12.14 seconds. Repeated holds made the download look much worse than the app.
+
+The default **Compare · live source + output** mode now records the continuously framed
+source beside the actual displayed output canvas, including RIFE frames. The
+original behavior remains available as **Lab · exact native pairs** and stores the
+unblended native result.
+
+One capped real-FLUX recording of the corrected path produced:
+
+- 384 VP9 frames over 12.804 seconds: 1920×1080 at 29.91 effective encoded fps.
+- 384 distinct source-panel frames and 102 distinct generated-panel frames.
+- About 7.97 visible generated updates per second versus 3.8 native results per
+  second in the end-of-run diagnostics.
+- A normalized H.264 master with 385 frames at constant 30/1 fps, 12.833 seconds,
+  and a 4.48 MB file size.
+
+The motion probe crops each panel before running `mpdecimate`; measuring the
+whole compositor would let a moving source hide a frozen result. The generated
+side cleared the acceptance gate of at least 6 visible updates per second and
+at least 1.5× the measured native cadence.
+
+## Final paid run
+
+The tracked public artifacts are:
+
+- [`assets/clay-screen-demo.mp4`](assets/clay-screen-demo.mp4): 22.889 s,
+  1920×1080, H.264, 30000/1001 fps, 686 frames, fast-start showcase MP4.
+- [`assets/clay-screen-output-only-demo.mp4`](assets/clay-screen-output-only-demo.mp4): 14.000 s,
+  1080×1080, H.264, 30/1 fps, 420 frames, fast-start MP4.
+- [`assets/clay-screen-demo.gif`](assets/clay-screen-demo.gif): reduced animated
+  preview of the new showcase for the README.
+- [`assets/flux2-smoke-result.jpg`](assets/flux2-smoke-result.jpg): still from
+  the gallery-scroll phase.
+
+The retained output-only source recording was produced automatically from the
+first real result to the 15-second safety cap:
+
+- Browser WebM: 14.124 s inferred, 1080×1080 VP9, 424 frames, 29.95 effective
+  fps, maximum encoded frame gap 68 ms.
+- Live diagnostics at the end: 10.0 sampled fps, 4.0 native FLUX.2 fps, 8.0
+  presented fps, 438 ms p95 displayed-frame age including startup.
+- A second run of the same latest-frame-wins pipeline reported 138 ms latest
+  latency and 292 ms p95 displayed-frame age. Across the final two runs, the
+  steady pipeline stayed near 4 native and 8 presented frames per second.
+- The 0.95 output-feedback setting allowed the map and cards to move while the
+  fixed seed and RIFE pair retained visual continuity.
+
+Six bounded 15-second iterations were purchased while diagnosing queueing,
+validating the latest-frame-wins scheduler, increasing source motion, and
+capturing the output-only and live-compare takes. At the listed rate of $0.00194 per compute-second,
+their combined rate-times-cap ceiling is:
+
+```text
+6 × 15 × $0.00194 = $0.1746
+```
+
+This is a conservative maximum estimate, not a billing-dashboard receipt. No
+more paid combinations were run.
+
+## Why the scroll bug is fixed
+
+The old browser loop contained an `inFlight` lock and captured the next source
+frame only after the previous response. Scrolling that happened during the
+request was absent from the next model input. Sending unbounded 10 fps fixed
+sampling but created a 1.66-second server backlog.
+
+The release uses a tested middle path:
+
+1. Capture remains independent at a 100 ms interval.
+2. One FLUX.2 request is allowed in flight.
+3. While it runs, new samples replace one waiting frame in memory.
+4. When the response arrives, only that freshest waiting frame is dispatched.
+5. The returned RIFE pair is paced using the observed native-result interval.
+6. A separate 30 fps presentation canvas records the latest visible state.
+
+This keeps motion observable without purchasing or displaying stale work.
+
+## Current gates
 
 | Gate | Result |
 |---|---|
-| Python tests | pass; 12 tests in the current run |
-| JavaScript syntax and built-in tests | pass; 9 tests in the current local-only build |
-| Mocked browser FLUX.2 flow | pass; the earlier stream run produced 38 generated frames, and the current run exercised token exchange, cleanup, and the 15-second cap |
-| Official fal browser client integration | pass through WebSocket construction with mocked inference |
-| Hosted app | absent by design; GitHub Pages is disabled and the README holds the real video |
-| Responsive layout | pass at 390 × 844 |
-| Missing server key fails closed | pass |
-| Wrong access code fails closed | pass |
-| Realtime app allowlist | pass; only `fal-ai/flux-2/klein/realtime` is accepted |
-| Current fal token schema | pass; request includes both the required `app` and exact `allowed_apps` values |
-| Current fal token response | pass; both the documented object and live raw JSON string forms are normalized server-side |
-| Token response caching | pass; disabled with `Cache-Control: no-store` |
-| `FAL_KEY` in frontend or tracked environment files | pass; not present |
-| Real fal key authentication | pass |
-| Realtime token creation | pass; fal returned HTTP 201 and the localhost endpoint returned HTTP 200 without exposing the token |
-| Paid FLUX.2 frames and cost | pass; 49 displayed frames in one 15-second run, estimated at no more than $0.0291 at the listed rate |
-| Visual parity with the original X demo | partial; strong clay material and layout preservation, but weaker text, presentation, and measured frame rate |
-| New 15-second session cap | pass in mocked and real browser sessions; the connection closed and the UI returned to Start |
-| Stop during WebSocket handshake | pass; the socket guard prevents the pinned fal client from sending a queued frame after Stop |
-| Localhost-only release boundary | pass; hosted token code is removed, Pages is disabled, and live token exchange remained on `127.0.0.1` |
-| Real browser console | pass; 0 errors during the paid run |
-| Built-in recording quality | pass; FLUX.2 capture requests 30 fps at 8 Mbps from the 768×768 output canvas |
-| Public evidence | pass; the README embeds a tracked 10-second GIF preview and links the 13-second MP4 master |
+| Python tests | pass; 12 tests |
+| JavaScript syntax and tests | pass; 18 tests |
+| Independent capture before result | pass |
+| Latest-frame-wins dispatch | pass |
+| Out-of-order request correlation | pass |
+| Bounded pending storage | pass |
+| Stop after delayed capture or WebSocket handshake | pass |
+| Selectable 15/45/90-second deadline | pass; default 45 seconds |
+| Free Chrome UI pass | pass; Demo, Start/Stop, fullscreen output, Create/Compare/Lab selection, rapid-stop gate, and save |
+| Real FLUX.2 moving-source run | pass |
+| Manual recording | pass; 1920×1080 live compare at 29.91 encoded fps and 7.97 generated updates/s |
+| Missing key and wrong code | fail closed |
+| Exact fal model allowlist | pass |
+| Token response caching | disabled with `Cache-Control: no-store` |
+| `FAL_KEY` in frontend or tracked env files | absent |
+| Public owner-funded endpoint | absent by design |
+| GitHub Pages or Vercel dependency | absent |
+| Captured-tab scroll implementation | present with feature detection; Chrome permission chooser remains a manual browser gate |
 
-The bounded real-service gate now passes. This establishes that a fresh clone
-can mint a scoped token, connect to FLUX.2, display real output, and stop on the
-usage cap. It does not establish exact parity with the inspiration.
+## Remaining limitations
 
-## Completed bounded real-service smoke test
+- Small generated text is pseudo-text and can mutate.
+- Generated cadence depends on fal load, network path, and hardware. The 4/8
+  fps receipt is evidence from these runs, not a service guarantee.
+- Chrome's captured-surface scroll forwarding works only for a captured browser
+  tab on supported desktop Chrome. Other surfaces need side-by-side windows.
+- The selectable cutoff limits one session; it does not stop a local user from
+  starting another and is not an account-level budget.
+- The in-browser WebM may lack duration metadata. The tracked MP4 is normalized
+  to seekable constant-frame-rate H.264 with `ffmpeg`.
 
-The July 15 run used the 512×288, three-second map clip in
-`output/review/current-pan-source.mp4`, which was effectively static despite its
-filename. No second paid run was performed.
+## Optional Mac fallback receipt
 
-- Token creation: pass; live fal HTTP 201, local token endpoint HTTP 200.
-- Output: 49 displayed frames before the real 15-second cap.
-- Last observed round-trip: 271 ms. This is a single last-frame reading, not an
-  average or percentile.
-- Effective displayed generation rate: about 3.3 frames per second over the
-  capped window, including two RIFE frames per response.
-- Browser console: 0 errors.
-- Estimated maximum cost: `15 × $0.00194 = $0.0291`. The API-scoped key cannot
-  read account billing, so this is a rate-times-cap estimate rather than a
-  dashboard-confirmed charge.
-- Public artifacts: [`assets/flux2-smoke-result.jpg`](assets/flux2-smoke-result.jpg)
-  [`assets/clay-screen-demo.gif`](assets/clay-screen-demo.gif), and
-  [`assets/clay-screen-demo.mp4`](assets/clay-screen-demo.mp4).
-
-Screen, Camera, and the remaining materials are already covered by free UI or
-mocked checks. No additional real-service combinations were purchased.
-
-At the price listed on July 15, 2026, a continuously billed 15-second session is
-approximately `15 × $0.00194 = $0.0291`. Clients can restart sessions, so the cap
-does not impose a hard account-level spending limit.
-
-## Comparison with the original X demo
-
-The result is working in the same broad category, but it is not yet as polished
-as Ryan Stephen's demo.
-
-- **What matches:** real image-to-image streaming, recognizable map geometry,
-  coherent pastel clay regions, rounded raised roads and markers, and stable
-  composition across an effectively static source.
-- **What trails:** small text is garbled, the app transforms the selected source
-  inside a side-by-side studio rather than presenting one immersive transformed
-  browser surface, and the measured 3.3 displayed frames per second is well
-  below Ryan's reported roughly 20 fps.
-- **What this run cannot prove:** motion tracking and temporal consistency under
-  panning, because the validation clip contained no meaningful motion.
-
-The release should therefore be described as a simple, working FLUX.2
-approximation with convincing material treatment—not a pixel-for-pixel or
-frame-rate-equivalent recreation.
-
-## Optional local Mac fallback receipt
-
-The private local backend was validated on an Apple Silicon Mac (`Mac16,5`,
-48 GB, macOS 15.6) with Python 3.10.16, PyTorch MPS, Diffusers 0.33.1,
-Transformers 4.48.3, and StreamDiffusion-Mac at commit `99f146e`.
-
-| Local gate | Result |
-|---|---|
-| MPS available | pass |
-| SD-Turbo + TAESD download and warm-up | pass; about 4.8 GB |
-| Real PNG to generated 512×288 JPEG | pass |
-| Four warm model calls | 103, 136, 103, and 104 ms |
-| Browser video flow | pass against the current FLUX.2 UI; 107 frames in the verification run |
-| Browser console | pass; no errors or warnings during generation and Stop |
-
-Those figures measure the model call rather than capture, JPEG transport, or
-browser drawing, and will vary across Macs.
-
-`pip check` in `.venv-mac` reports the StreamDiffusion-Mac package's stale
-`transformers==4.35.2` metadata pin. The setup script intentionally installs
-the fork without dependencies and uses Transformers 4.48.3 because Diffusers
-0.33.1 imports APIs absent from 4.35.2; the generation receipt above verifies
-that combination. The FLUX.2 and CI environments do not install this fork.
+The earlier private fallback remains validated on an Apple Silicon Mac
+(`Mac16,5`, 48 GB) with warm model calls of 103–136 ms. It uses SD-Turbo and
+TAESD at 512×288 and is less faithful than FLUX.2, but capture and inference stay
+on the device. This release did not rerun or purchase anything for that path.
 
 ## Free verification commands
 
@@ -110,6 +173,7 @@ that combination. The FLUX.2 and CI environments do not install this fork.
 pytest -q
 npm run check
 npm test
+git diff --check
 git check-ignore -q .env.local
 ```
 

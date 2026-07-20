@@ -1,81 +1,58 @@
-# Clay Screen
+# SurfaceShift
 
-Turn a screen, camera, or video into a responsive handmade world with
+**Restyle any live screen.** Turn a browser tab, camera, or video into a
+responsive visual world with
 [FLUX.2 [klein] Realtime](https://fal.ai/models/fal-ai/flux-2/klein/realtime).
+Clay Screen is now the signature material preset; the repository slug stays
+`clay-screen` so existing links and clones keep working.
 
-[Watch the real FLUX.2 demo](#real-flux2-demo) ·
-[Research and build notes](RESEARCH_AND_BUILD_PLAN.md) ·
-[Validation receipt](VALIDATION.md)
+[Watch the 23-second MP4](assets/clay-screen-demo.mp4) ·
+[Validation receipt](VALIDATION.md) ·
+[Research notes](RESEARCH_AND_BUILD_PLAN.md)
 
-Clay Screen intentionally has no hosted app. Real FLUX.2 generation is
-localhost-only: clone the repository and use your own fal key. The repository
-does not operate an owner-funded public inference endpoint.
+SurfaceShift intentionally has no hosted AI app. Clone it, run it on localhost,
+and supply your own fal key. There is no Vercel deployment, GitHub Pages demo,
+or owner-funded public inference endpoint.
 
 ## Real FLUX.2 demo
 
-![Actual FLUX.2 Clay Screen demo](assets/clay-screen-demo.gif)
+[![SurfaceShift transforming live maps and a scrolling gallery](assets/clay-screen-demo.gif)](assets/clay-screen-demo.mp4)
 
-The looping preview is cut from the
-[higher-quality 13-second MP4](assets/clay-screen-demo.mp4) captured during the
-bounded release test. One Video + Clay session produced 49 generated frames
-before the 15-second safety cap, with a final reported round-trip of 271 ms and
-no browser console errors. At the listed rate, the session's maximum estimated
-cost was about $0.029.
+This is an actual FLUX.2 run recorded by SurfaceShift—not a design mockup. The
+video opens in **Compare · live source + output** so the moving source and
+displayed output remain visible together across a scrolling gallery and several
+map zooms, then finishes with a clean generated-only clay interface.
 
-This proves the live pipeline and the tactile clay treatment. It is not a claim
-of exact parity with the inspiration: the validation source was effectively
-static, small generated text is less stable, and the original demo presents a
-more cohesive full-screen transformation. See the [validation receipt](VALIDATION.md)
-for the direct comparison.
+The showcase is a 22.89-second, 1920×1080 H.264 MP4 at a constant 29.97 fps.
+It preserves the recorded timing: no speed ramp or post-production optical-flow
+frames were added. This is an edited showcase rather than a Lab exact-pair audit
+or an inference-fps benchmark; see the [validation receipt](VALIDATION.md) for
+the measured recorder evidence and the retained output-only validation take.
 
-## Record your own high-quality demo
+## What it is for
 
-The cleanest result comes from the built-in output recorder:
+- **Create:** clean stylized footage for launches, social posts, title
+  sequences, and product stories.
+- **Direct:** audition a material or visual language over a real interface,
+  camera, map, or reference video before committing to production.
+- **Perform:** use **Fullscreen output** for a projector, presentation, or OBS
+  window capture. SurfaceShift does not install a virtual-camera device.
+- **Evaluate:** record **Lab · exact native pairs** to inspect fidelity, drift,
+  and motion response without presentation interpolation.
 
-1. Prepare a 10–12 second, 1440p source clip with one slow pan or scroll. Use
-   large shapes and limited text; rapid movement and tiny labels expose the
-   model's weakest points.
-2. Load it with **Video**, select **Clay** at 100%, enter the local access code,
-   and start FLUX.2. The field clears after authorization, so the code will not
-   appear in the recording.
-3. As soon as the first generated frame appears, click **Record 10s**. Cloud
-   recordings use the 768×768 output canvas at 30 fps and request an 8 Mbps
-   bitrate. The browser saves H.264 MP4 when supported and WebM otherwise.
-4. Keep the strongest 8–12 seconds. The source should move slowly enough that
-   viewers can see the material stay coherent instead of watching a speed test.
+SurfaceShift is an art-direction and visual-prototyping tool. Generated text is
+often pseudo-text, and details can drift, so it is not a faithful browser
+replacement, an accessibility transform, or a tool for high-stakes content.
 
-To show the whole product rather than only the generated canvas, make the
-browser at least 1440 pixels wide, wait until the access-code field clears, and
-then press **Shift-Command-5** on macOS. Record a selected portion containing
-the two stages and controls, turn the microphone and pointer off, and use
-**SDR / Most Compatible** when that option is available. Apple documents the
-current controls in its [Mac screen-recording guide](https://support.apple.com/en-us/102618).
-
-Normalize either the browser recording (`.webm`) or Mac recording (`.mov`) to a
-high-quality, broadly compatible square MP4:
-
-```bash
-ffmpeg -i recording.webm \
-  -vf "fps=30,scale=1080:1080:flags=lanczos" \
-  -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p \
-  -movflags +faststart -an demo.mp4
-```
-
-Record a square region from the start so this command does not stretch the
-image. Encoding at 30 fps cannot create missing model frames; smooth source
-motion, a stable composition, and a clean crop matter more than export bitrate.
-To replace the README demo, update `assets/clay-screen-demo.mp4`, regenerate a
-short `assets/clay-screen-demo.gif` preview, and export one strong frame to
-`assets/flux2-smoke-result.jpg`.
-
-## Run the FLUX.2 demo locally
+## Run locally
 
 Requirements:
 
 - Python 3.10 or newer
-- macOS or Linux shell (the quickstart is not tested on native Windows)
-- a [fal API key](https://fal.ai/dashboard/keys) with available balance
-- current Chrome or Safari
+- macOS or Linux shell; native Windows is not currently tested
+- a [fal API key](https://fal.ai/dashboard/keys) with a small available balance
+- current Chrome for captured-tab scroll control; other modern browsers can use
+  Demo, Camera, Video, or a side-by-side capture workflow
 
 ```bash
 git clone https://github.com/evnsnclr/clay-screen.git
@@ -100,73 +77,119 @@ Then run:
 ./run_demo.sh
 ```
 
-Open [http://127.0.0.1:7860](http://127.0.0.1:7860), enter the same access
-code, choose **Screen**, **Camera**, or **Video**, and press
-**Start transforming**. `.env.local` is ignored by Git and the fal key remains
-server-side.
+Open [http://127.0.0.1:7860](http://127.0.0.1:7860). The fal key stays on the
+local Python server; the browser receives only an endpoint-scoped, short-lived
+realtime token.
 
-The access code protects the local token endpoint; it is not an account system
-or a hard spending limit. A connection that produces no first frame stops after
-10 seconds, and a normal FLUX.2 session stops after 15 seconds. A user or
-modified client can immediately start another, so keep a small fal balance and
-review the billing controls available to your account.
+## Get a good demo immediately
 
-On July 15, 2026, fal listed this endpoint at **$0.00194 per compute-second**.
-A continuously billed 15-second session would cost about **$0.029**. Check the
-[current model page](https://fal.ai/models/fal-ai/flux-2/klein/realtime) before
-running it.
+1. Choose **Demo** and **Clay** at 100%.
+2. Enter the access code from `.env.local`.
+3. Choose the **45-second / about $0.09** session limit, then press **Start
+   transforming**. The limit is a ceiling, so stopping earlier costs less.
+4. Leave **Workspace** on **Compare · live source + output**, then press
+   **Record**. It captures the continuously moving source beside the same
+   interpolated output visible in the app.
+5. Open the saved 1920×1080 comparison, or choose **Create · clean output**
+   before recording for a 1080×1080 generated-only take. Use **Lab · exact
+   native pairs** only when you need the precise source/result pairs.
 
-## What leaves the device
+Recording is a manual toggle inside the selected 15, 45, or 90-second cloud
+limit. It uses a dedicated
+presentation canvas targeting 30 fps and requests up to 16 Mbps for landscape
+modes. Compare records the moving source and every displayed output update,
+including RIFE interpolation; its footer shows the current output age so the
+model delay is explicit. Lab instead pairs the precise JPEG sent to
+FLUX.2 with its unblended native result. That audit mode intentionally excludes
+RIFE frames and will therefore look less fluid. Normalize the browser WebM below
+before posting to guarantee a constant-frame-rate master.
 
-The localhost app resizes selected browser-capture frames and sends them
-directly to fal over a realtime WebSocket. fal returns generated frames for the
-browser to draw and optionally record. The local FastAPI server supplies only a
-short-lived, endpoint-scoped token; it does not proxy the image stream.
+## Transform and scroll a real browser tab
 
-Treat screen sharing as disclosure to a third-party processor. Do not select a
-window containing private information, and review
-[fal's payload documentation](https://fal.ai/docs/documentation/model-apis/inference/payloads)
-before use.
+On desktop Chrome 136 or newer:
 
-## How it works
+1. Choose **Browser tab** and select the tab you want to transform. SurfaceShift
+   excludes the current tab and whole-monitor capture to prevent recursion.
+2. Start transforming, then click **Scroll captured tab**.
+3. Grant Chrome's one-time captured-surface permission.
+4. Keep the pointer over the generated output and scroll. Chrome forwards those
+   wheel events to the captured tab while SurfaceShift stays visible and keeps
+   sampling.
+
+This uses Chrome's
+[Captured Surface Control API](https://developer.chrome.com/docs/web-platform/captured-surface-control).
+If it is unavailable, keep SurfaceShift and the source visible side by side.
+Switching away can throttle browser timers and reduce responsiveness.
+
+## Why scrolling now works
+
+The first implementation waited for FLUX.2 to return before taking another
+screenshot. Most scroll motion happened between requests and was never sent.
+The current pipeline separates capture from inference:
 
 ```text
-browser-approved screen, camera, or video
-        │ resized JPEG frames
-        ▼
-fal realtime WebSocket → FLUX.2 [klein] → generated canvas
-        ▲
-localhost token endpoint + your own FAL_KEY
+moving source
+  → sample at 10 fps
+  → retain only the newest waiting frame
+  → one low-latency FLUX.2 request at a time
+  → evenly pace the RIFE pair
+  → generated canvas + 30 fps recording compositor
 ```
 
-The browser keeps only one fresh frame in flight, uses a fixed seed and output
-feedback for continuity, and closes the connection on Stop, error, page exit,
-or the 15-second cap.
+This latest-frame-wins design avoids both failure modes: it does not miss all
+motion while waiting, and it does not build a costly queue of stale cloud work.
+The diagnostics badge reports sampled fps, native result fps, displayed fps,
+and p95 displayed-frame age during each live run.
+
+## Normalize a browser recording
+
+Chrome normally saves VP9 WebM with browser timestamps. Convert the default
+1920×1080 live comparison to a constant-frame-rate, seekable MP4 before posting:
+
+```bash
+ffmpeg -i clay-screen-live.webm \
+  -vf "fps=30,scale=1920:1080:flags=lanczos" \
+  -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p \
+  -movflags +faststart -an clay-screen-live.mp4
+```
+
+For **Create · clean output**, change both dimensions back to `1080:1080`.
+
+Do not use frame-rate conversion to hide a poor live run. The built-in badge
+and the validation receipt distinguish encoded cadence from actual generated
+cadence.
+
+## Privacy and cost boundary
+
+FLUX.2 mode sends the selected JPEG frames directly to fal over a realtime
+WebSocket. The local FastAPI server supplies the short-lived token; it does not
+receive, proxy, or intentionally store the frames. Share only content you are
+comfortable sending to a third-party processor.
+
+Choose a 15, 45, or 90-second ceiling before each cloud session. At the price
+confirmed on July 20, 2026—$0.00194 per compute-second—the rate-times-limit
+estimates are about **$0.03, $0.09, or $0.18**. Stopping early closes the
+connection. These controls and the access code are local safety rails, not
+account-level spending limits; a user can start another session. Keep a small
+fal balance and recheck the
+[current model page](https://fal.ai/models/fal-ai/flux-2/klein/realtime).
+
+Every clone supplies its own credentials. Never deploy this token endpoint
+publicly with your personal key unless you add real authentication, rate
+limits, and an account-level budget.
 
 ## Optional private Mac fallback
 
-The existing SD-Turbo path runs entirely on an Apple Silicon Mac. It is slower
-and substantially less faithful than FLUX.2, but requires no cloud key and sends
-no frames off-device.
-
-Requirements:
-
-- Apple Silicon (M1–M4 or newer)
-- macOS 14 or newer
-- Python 3.10 or newer
-- about 6 GB free for the one-time model download
+The existing SD-Turbo fallback runs entirely on Apple Silicon. It is slower and
+less faithful than FLUX.2, but sends no frames off-device:
 
 ```bash
 ./setup_mac.sh
 ./run_mac.sh
 ```
 
-Open [http://127.0.0.1:7860](http://127.0.0.1:7860). The first generated frame
-downloads SD-Turbo and TAESD and warms the pipeline; later launches reuse the
-Hugging Face cache. The local path uses 512×288 inputs and a two-timestep
-StreamDiffusion batch through PyTorch MPS. On the development Mac (`Mac16,5`,
-48 GB), warm model calls took 103–136 ms; performance varies by Mac. Leave
-`FAL_KEY` and `CLAY_SCREEN_ACCESS_CODE` blank when you want this path selected.
+It requires macOS 14+, Apple Silicon, and about 6 GB for the one-time model
+download. Leave `FAL_KEY` and `CLAY_SCREEN_ACCESS_CODE` blank when using it.
 
 ## Development
 
@@ -178,18 +201,15 @@ npm run check
 npm test
 ```
 
-These checks use mocks and never perform paid inference. The real-service gate
-and one bounded paid smoke test are recorded in [VALIDATION.md](VALIDATION.md).
+CI uses mocks, leaves `FAL_KEY` unset, and never performs paid inference.
 
-## Licenses and attribution
+## License and attribution
 
-Clay Screen code is Apache-2.0 licensed. FLUX.2 mode uses the MIT-licensed,
+SurfaceShift code is Apache-2.0 licensed. FLUX.2 mode uses the MIT-licensed,
 pinned `@fal-ai/client`, fal's hosted service, and FLUX.2 [klein] from Black
-Forest Labs; their terms apply separately. The optional Mac path installs
-StreamDiffusion-Mac, SD-Turbo, and TAESD, whose licenses also remain separate.
-See [NOTICE](NOTICE).
+Forest Labs; their terms apply separately. See [NOTICE](NOTICE).
 
 The visual direction was inspired by
 [Ryan Stephen's realtime diffusion UI experiment](https://x.com/Ryan__Stephen/status/2066890410824528077).
-Clay Screen is an independent implementation and does not reproduce the
+SurfaceShift is an independent implementation and does not reproduce the
 original project's unpublished code or configuration.
