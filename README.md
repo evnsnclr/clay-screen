@@ -1,30 +1,48 @@
-# Clay Screen
+# SurfaceShift
 
-Turn a browser tab, camera, or video into a responsive handmade world with
+**Restyle any live screen.** Turn a browser tab, camera, or video into a
+responsive visual world with
 [FLUX.2 [klein] Realtime](https://fal.ai/models/fal-ai/flux-2/klein/realtime).
+Clay Screen is now the signature material preset; the repository slug stays
+`clay-screen` so existing links and clones keep working.
 
 [Watch the 23-second MP4](assets/clay-screen-demo.mp4) ·
 [Validation receipt](VALIDATION.md) ·
 [Research notes](RESEARCH_AND_BUILD_PLAN.md)
 
-Clay Screen intentionally has no hosted AI app. Clone it, run it on localhost,
+SurfaceShift intentionally has no hosted AI app. Clone it, run it on localhost,
 and supply your own fal key. There is no Vercel deployment, GitHub Pages demo,
 or owner-funded public inference endpoint.
 
 ## Real FLUX.2 demo
 
-[![Clay Screen transforming live maps and a scrolling gallery](assets/clay-screen-demo.gif)](assets/clay-screen-demo.mp4)
+[![SurfaceShift transforming live maps and a scrolling gallery](assets/clay-screen-demo.gif)](assets/clay-screen-demo.mp4)
 
-This is an actual FLUX.2 run recorded by Clay Screen—not a design mockup. The
-video opens in **Live compare · smooth** so the moving source and displayed
-output remain visible together across a scrolling gallery and several map
-zooms, then finishes with a clean generated-only clay interface.
+This is an actual FLUX.2 run recorded by SurfaceShift—not a design mockup. The
+video opens in **Compare · live source + output** so the moving source and
+displayed output remain visible together across a scrolling gallery and several
+map zooms, then finishes with a clean generated-only clay interface.
 
 The showcase is a 22.89-second, 1920×1080 H.264 MP4 at a constant 29.97 fps.
 It preserves the recorded timing: no speed ramp or post-production optical-flow
-frames were added. This is an edited showcase rather than an exact-pair audit or
-an inference-fps benchmark; see the [validation receipt](VALIDATION.md) for the
-measured recorder evidence and the retained output-only validation take.
+frames were added. This is an edited showcase rather than a Lab exact-pair audit
+or an inference-fps benchmark; see the [validation receipt](VALIDATION.md) for
+the measured recorder evidence and the retained output-only validation take.
+
+## What it is for
+
+- **Create:** clean stylized footage for launches, social posts, title
+  sequences, and product stories.
+- **Direct:** audition a material or visual language over a real interface,
+  camera, map, or reference video before committing to production.
+- **Perform:** use **Fullscreen output** for a projector, presentation, or OBS
+  window capture. SurfaceShift does not install a virtual-camera device.
+- **Evaluate:** record **Lab · exact native pairs** to inspect fidelity, drift,
+  and motion response without presentation interpolation.
+
+SurfaceShift is an art-direction and visual-prototyping tool. Generated text is
+often pseudo-text, and details can drift, so it is not a faithful browser
+replacement, an accessibility transform, or a tool for high-stakes content.
 
 ## Run locally
 
@@ -66,19 +84,22 @@ realtime token.
 ## Get a good demo immediately
 
 1. Choose **Demo** and **Clay** at 100%.
-2. Enter the access code from `.env.local` and press **Start transforming**.
-3. Leave **Recording** on **Live compare · smooth**, then press **Record**. It
-   captures the continuously moving source beside the same interpolated output
-   visible in the app.
-4. Open the saved 1920×1080 comparison, or choose **Output · square** before
-   recording for a clean 1080×1080 generated-only take. Use **Exact pairs ·
-   audit** only when you need to inspect the precise native source/result pairs.
+2. Enter the access code from `.env.local`.
+3. Choose the **45-second / about $0.09** session limit, then press **Start
+   transforming**. The limit is a ceiling, so stopping earlier costs less.
+4. Leave **Workspace** on **Compare · live source + output**, then press
+   **Record**. It captures the continuously moving source beside the same
+   interpolated output visible in the app.
+5. Open the saved 1920×1080 comparison, or choose **Create · clean output**
+   before recording for a 1080×1080 generated-only take. Use **Lab · exact
+   native pairs** only when you need the precise source/result pairs.
 
-Recording is a manual toggle, not a fixed ten-second timer. It uses a dedicated
+Recording is a manual toggle inside the selected 15, 45, or 90-second cloud
+limit. It uses a dedicated
 presentation canvas targeting 30 fps and requests up to 16 Mbps for landscape
-modes. Live compare records the moving source and every displayed output update,
+modes. Compare records the moving source and every displayed output update,
 including RIFE interpolation; its footer shows the current output age so the
-model delay is explicit. Exact-pair audit instead pairs the precise JPEG sent to
+model delay is explicit. Lab instead pairs the precise JPEG sent to
 FLUX.2 with its unblended native result. That audit mode intentionally excludes
 RIFE frames and will therefore look less fluid. Normalize the browser WebM below
 before posting to guarantee a constant-frame-rate master.
@@ -87,17 +108,17 @@ before posting to guarantee a constant-frame-rate master.
 
 On desktop Chrome 136 or newer:
 
-1. Choose **Browser tab** and select the tab you want to transform. Clay Screen
+1. Choose **Browser tab** and select the tab you want to transform. SurfaceShift
    excludes the current tab and whole-monitor capture to prevent recursion.
 2. Start transforming, then click **Scroll captured tab**.
 3. Grant Chrome's one-time captured-surface permission.
 4. Keep the pointer over the generated output and scroll. Chrome forwards those
-   wheel events to the captured tab while Clay Screen stays visible and keeps
+   wheel events to the captured tab while SurfaceShift stays visible and keeps
    sampling.
 
 This uses Chrome's
 [Captured Surface Control API](https://developer.chrome.com/docs/web-platform/captured-surface-control).
-If it is unavailable, keep Clay Screen and the source visible side by side.
+If it is unavailable, keep SurfaceShift and the source visible side by side.
 Switching away can throttle browser timers and reduce responsiveness.
 
 ## Why scrolling now works
@@ -132,7 +153,7 @@ ffmpeg -i clay-screen-live.webm \
   -movflags +faststart -an clay-screen-live.mp4
 ```
 
-For **Output · square**, change both dimensions back to `1080:1080`.
+For **Create · clean output**, change both dimensions back to `1080:1080`.
 
 Do not use frame-rate conversion to hide a poor live run. The built-in badge
 and the validation receipt distinguish encoded cadence from actual generated
@@ -145,11 +166,12 @@ WebSocket. The local FastAPI server supplies the short-lived token; it does not
 receive, proxy, or intentionally store the frames. Share only content you are
 comfortable sending to a third-party processor.
 
-Each normal cloud session stops after 15 seconds. At the price listed on July
-16, 2026—$0.00194 per compute-second—the maximum rate-times-cap estimate is
-about **$0.029 per session**. The access code and timer are local safety rails,
-not account-level spending limits; a user can start another session. Keep a
-small fal balance and recheck the
+Choose a 15, 45, or 90-second ceiling before each cloud session. At the price
+confirmed on July 20, 2026—$0.00194 per compute-second—the rate-times-limit
+estimates are about **$0.03, $0.09, or $0.18**. Stopping early closes the
+connection. These controls and the access code are local safety rails, not
+account-level spending limits; a user can start another session. Keep a small
+fal balance and recheck the
 [current model page](https://fal.ai/models/fal-ai/flux-2/klein/realtime).
 
 Every clone supplies its own credentials. Never deploy this token endpoint
@@ -183,11 +205,11 @@ CI uses mocks, leaves `FAL_KEY` unset, and never performs paid inference.
 
 ## License and attribution
 
-Clay Screen code is Apache-2.0 licensed. FLUX.2 mode uses the MIT-licensed,
+SurfaceShift code is Apache-2.0 licensed. FLUX.2 mode uses the MIT-licensed,
 pinned `@fal-ai/client`, fal's hosted service, and FLUX.2 [klein] from Black
 Forest Labs; their terms apply separately. See [NOTICE](NOTICE).
 
 The visual direction was inspired by
 [Ryan Stephen's realtime diffusion UI experiment](https://x.com/Ryan__Stephen/status/2066890410824528077).
-Clay Screen is an independent implementation and does not reproduce the
+SurfaceShift is an independent implementation and does not reproduce the
 original project's unpublished code or configuration.

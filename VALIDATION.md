@@ -4,7 +4,7 @@ Updated July 18, 2026.
 
 ## Release verdict
 
-Clay Screen now follows meaningful motion and is ready for a public recorded
+SurfaceShift now follows meaningful motion and is ready for a public recorded
 demo. It is no longer equivalent to the original broken clip, which processed
 isolated screenshots and froze for roughly a third of a second between bursts.
 
@@ -42,7 +42,7 @@ those long gaps occupied 88.6% of the timeline. The final release recording has
 no encoded gap above 68 ms. Pixel-level freeze detection after its first warm-up
 frame found 78 holds averaging 129 ms and topping out at 167 ms.
 
-## Live compare recorder fix
+## Compare recorder fix
 
 The first side-by-side recorder was an audit view, not a showcase view. Although
 its WebM contained about 30 encoded frames per second, both panels advanced only
@@ -50,9 +50,9 @@ when a native source/result pair arrived. In the checked Google Earth take, the
 source had 26 distinct frames (2.14 fps) and the result had 31 (2.55 fps) across
 12.14 seconds. Repeated holds made the download look much worse than the app.
 
-The default **Live compare · smooth** mode now records the continuously framed
+The default **Compare · live source + output** mode now records the continuously framed
 source beside the actual displayed output canvas, including RIFE frames. The
-original behavior remains available as **Exact pairs · audit** and stores the
+original behavior remains available as **Lab · exact native pairs** and stores the
 unblended native result.
 
 One capped real-FLUX recording of the corrected path produced:
@@ -136,8 +136,8 @@ This keeps motion observable without purchasing or displaying stale work.
 | Out-of-order request correlation | pass |
 | Bounded pending storage | pass |
 | Stop after delayed capture or WebSocket handshake | pass |
-| Absolute 15-second deadline | pass |
-| Free Chrome UI pass | pass; Demo, Start/Stop, Showcase, live/audit selection, rapid-stop gate, and save |
+| Selectable 15/45/90-second deadline | pass; default 45 seconds |
+| Free Chrome UI pass | pass; Demo, Start/Stop, fullscreen output, Create/Compare/Lab selection, rapid-stop gate, and save |
 | Real FLUX.2 moving-source run | pass |
 | Manual recording | pass; 1920×1080 live compare at 29.91 encoded fps and 7.97 generated updates/s |
 | Missing key and wrong code | fail closed |
@@ -155,7 +155,7 @@ This keeps motion observable without purchasing or displaying stale work.
   fps receipt is evidence from these runs, not a service guarantee.
 - Chrome's captured-surface scroll forwarding works only for a captured browser
   tab on supported desktop Chrome. Other surfaces need side-by-side windows.
-- The 15-second cutoff limits one session; it does not stop a local user from
+- The selectable cutoff limits one session; it does not stop a local user from
   starting another and is not an account-level budget.
 - The in-browser WebM may lack duration metadata. The tracked MP4 is normalized
   to seekable constant-frame-rate H.264 with `ffmpeg`.

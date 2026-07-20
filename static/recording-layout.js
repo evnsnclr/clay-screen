@@ -3,25 +3,25 @@ export const RECORDING_PRESETS = Object.freeze({
     mode: "live",
     width: 1920,
     height: 1080,
-    label: "Live compare · smooth",
+    label: "Compare · live source + output",
   }),
   audit: Object.freeze({
     mode: "audit",
     width: 1920,
     height: 1080,
-    label: "Exact pairs · audit",
+    label: "Lab · exact native pairs",
   }),
   output: Object.freeze({
     mode: "output",
     width: 1080,
     height: 1080,
-    label: "Output · square",
+    label: "Create · clean output",
   }),
   compare: Object.freeze({
     mode: "compare",
     width: 1920,
     height: 1080,
-    label: "Exact pairs · audit",
+    label: "Lab · exact native pairs",
   }),
 });
 

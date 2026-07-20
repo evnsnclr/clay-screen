@@ -14,5 +14,5 @@ python -m pip install --no-deps \
   "streamdiffusion-mac @ git+https://github.com/patrickhartono/StreamDiffusion-Mac.git@99f146ecbe78e1d1f09044c5ca6e3d99b28b1000"
 
 echo
-echo "Mac runtime installed. Start Clay Screen with:"
+echo "Mac runtime installed. Start SurfaceShift with:"
 echo "  ./run_mac.sh"

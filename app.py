@@ -1,4 +1,4 @@
-"""Clay Screen: FLUX.2 realtime with an optional Apple Silicon fallback."""
+"""SurfaceShift: live FLUX.2 restyling with an optional Apple Silicon fallback."""
 
 from __future__ import annotations
 
@@ -70,7 +70,7 @@ def _cloud_available() -> bool:
     )
 
 
-app = FastAPI(title="Clay Screen", docs_url=None, redoc_url=None)
+app = FastAPI(title="SurfaceShift", docs_url=None, redoc_url=None)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
@@ -266,7 +266,7 @@ async def transform_frame(request: Request):
 async def legacy_frame_endpoint():
     raise HTTPException(
         status_code=409,
-        detail="Clay Screen now uses the local Mac transform endpoint",
+        detail="SurfaceShift now uses the local Mac transform endpoint",
     )
 
 

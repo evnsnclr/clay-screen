@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Turn a shared screen, camera, or video into a live claymation world."
+      content="Restyle a browser tab, camera, or video live with FLUX.2."
     />
     <meta name="theme-color" content="#f2e8da" />
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://cdn.jsdelivr.net wss://fal.run data: blob:; object-src 'none'; base-uri 'self'; form-action 'self'"
     />
-    <title>Clay Screen — realtime diffusion</title>
+    <title>SurfaceShift — restyle any live screen</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='28' fill='%23ec7445'/%3E%3Ccircle cx='24' cy='25' r='7' fill='%23f5c85b'/%3E%3Ccircle cx='40' cy='38' r='10' fill='%2386a96c'/%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,16 +21,16 @@
       href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="static/styles.css?v=0.3.7" />
+    <link rel="stylesheet" href="static/styles.css?v=0.4.0" />
   </head>
   <body>
     <div class="grain" aria-hidden="true"></div>
     <header class="site-header">
-      <a class="brand" href="#top" aria-label="Clay Screen home">
+      <a class="brand" href="#top" aria-label="SurfaceShift home">
         <span class="brand-mark" aria-hidden="true">
           <i></i><i></i><i></i>
         </span>
-        <span>Clay Screen</span>
+        <span>SurfaceShift</span>
       </a>
       <div class="header-meta">
         <span id="runtimeBadge" class="runtime-badge">checking runtime</span>
@@ -45,15 +45,16 @@
 
     <main id="top">
       <section class="intro">
-        <p class="eyebrow">SCREEN → GENERATIVE VIDEO</p>
-        <h1>Make your screen<br /><em>feel handmade.</em></h1>
+        <p class="eyebrow">LIVE VISUAL RESTYLING</p>
+        <h1>Restyle any live screen.<br /><em>Keep it moving.</em></h1>
         <p class="lede">
-          Run it on your computer, choose a source and material, and rebuild it
-          live with FLUX.2 Klein—or keep every frame private with the optional Mac fallback.
+          Turn a tab, camera, or video into a responsive visual world with
+          FLUX.2 Klein. Create a clean shot, compare the transformation, or
+          inspect exact model pairs—all from localhost.
         </p>
       </section>
 
-      <section id="studio" class="studio" data-runtime="preview" aria-label="Clay Screen studio" aria-busy="false">
+      <section id="studio" class="studio" data-runtime="preview" aria-label="SurfaceShift studio" aria-busy="false">
         <div class="stage-grid">
           <article class="stage-card input-card">
             <div class="stage-label">
@@ -88,7 +89,7 @@
               </div>
               <div id="performanceBadge" class="performance-badge" hidden>waiting for FLUX.2</div>
               <button id="exitShowcaseButton" class="showcase-exit" type="button" hidden>
-                Exit showcase
+                Exit fullscreen
               </button>
             </div>
           </article>
@@ -139,11 +140,20 @@
           </label>
 
           <label class="control-group recording-control" for="recordingMode">
-            <span class="control-title">Recording</span>
+            <span class="control-title">Workspace</span>
             <select id="recordingMode">
-              <option value="live" selected>Live compare · smooth</option>
-              <option value="audit">Exact pairs · audit</option>
-              <option value="output">Output · square</option>
+              <option value="output">Create · clean output</option>
+              <option value="live" selected>Compare · live source + output</option>
+              <option value="audit">Lab · exact native pairs</option>
+            </select>
+          </label>
+
+          <label id="budgetControl" class="control-group budget-control" for="sessionBudget">
+            <span class="control-title">Session budget</span>
+            <select id="sessionBudget">
+              <option value="15000">$0.03 max · 15 sec</option>
+              <option value="45000" selected>$0.09 max · 45 sec</option>
+              <option value="90000">$0.18 max · 90 sec</option>
             </select>
           </label>
 
@@ -166,7 +176,7 @@
               Scroll captured tab
             </button>
             <button id="showcaseButton" class="secondary-button" type="button" aria-pressed="false" disabled>
-              Showcase
+              Fullscreen output
             </button>
             <button id="startButton" class="primary-button" type="button">
               <span>Start transforming</span><i>↗</i>
@@ -187,6 +197,19 @@
         </div>
       </section>
 
+      <section class="use-cases" aria-labelledby="useCasesTitle">
+        <div class="use-cases-heading">
+          <p class="eyebrow">BUILT FOR MOTION</p>
+          <h2 id="useCasesTitle">One live engine.<br />Four useful jobs.</h2>
+        </div>
+        <div class="use-case-grid">
+          <article><span>CREATE</span><h3>Make launch footage</h3><p>Record clean, stylized motion for social posts, title sequences, and product stories.</p></article>
+          <article><span>DIRECT</span><h3>Explore a visual language</h3><p>Audition materials and moods over real interfaces, cameras, maps, or reference video.</p></article>
+          <article><span>PERFORM</span><h3>Build a live visual</h3><p>Send the fullscreen output to a projector, stream, or OBS window capture.</p></article>
+          <article><span>EVALUATE</span><h3>See what the model changed</h3><p>Use exact-pair Lab recordings to inspect fidelity, drift, and motion response honestly.</p></article>
+        </div>
+      </section>
+
       <section class="notes">
         <article>
           <span>CLOUD DISCLOSURE</span>
@@ -199,7 +222,7 @@
           <span>LOCAL-ONLY BY DESIGN</span>
           <p>
             This repository hosts no live AI. FLUX.2 starts only from localhost
-            with your own fal key and stops after 15 seconds.
+            with your own fal key and your selected per-session limit.
           </p>
         </article>
         <article>
@@ -213,7 +236,7 @@
     </main>
 
     <footer>
-      <span>CLAY SCREEN / 2026</span>
+      <span>SURFACESHIFT / 2026</span>
       <span>Built by Evan Smith</span>
     </footer>
 
@@ -222,6 +245,6 @@
     <canvas id="matchedSourceCanvas" width="704" height="704" hidden></canvas>
     <canvas id="matchedOutputCanvas" width="768" height="768" hidden></canvas>
     <canvas id="recordingCanvas" width="1920" height="1080" hidden></canvas>
-    <script type="module" src="static/app.js?v=0.3.8"></script>
+    <script type="module" src="static/app.js?v=0.4.0"></script>
   </body>
 </html>

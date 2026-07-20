@@ -2,8 +2,8 @@ import {
   CLOUD_CAPTURE_INTERVAL_MS,
   CLOUD_PENDING_LIMIT,
   CLOUD_PENDING_TTL_MS,
-  CLOUD_SESSION_LIMIT_MS,
   CLOUD_STARTUP_TIMEOUT_MS,
+  DEFAULT_CLOUD_SESSION_LIMIT_MS,
   FAL_CLIENT_URL,
   FAL_MODEL,
   FLUX_INPUT_SIZE,
@@ -13,7 +13,9 @@ import {
   buildFluxInput,
   buildRecordingOptions,
   chooseRuntime,
-} from "./flux-config.js?v=0.3.8";
+  estimateCloudSessionCost,
+  normalizeCloudSessionLimit,
+} from "./flux-config.js?v=0.4.0";
 import { CloudFramePump } from "./cloud-frame-pump.js?v=0.3.4";
 import { startDemoSource } from "./demo-source.js?v=0.3.4";
 import { installFalSocketGuard } from "./fal-socket-guard.js?v=0.3.4";
@@ -23,7 +25,7 @@ import {
   recordingPreset,
   shouldPublishPair,
   shouldStartArmedRecording,
-} from "./recording-layout.js?v=0.3.8";
+} from "./recording-layout.js?v=0.4.0";
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -66,6 +68,8 @@ const accessCode = $("#accessCode");
 const strength = $("#strength");
 const strengthValue = $("#strengthValue");
 const recordingMode = $("#recordingMode");
+const budgetControl = $("#budgetControl");
+const sessionBudget = $("#sessionBudget");
 
 const STYLE_PROMPTS = {
   clay: "Material-only edit of this exact input frame in handmade polymer clay. Faithfully reconstruct the same frame; do not redesign it. Preserve camera view, crop, layout, tile positions and sizes, image subjects, people, poses, objects, colors, browser chrome, icons, text shapes, and scroll position. Every tile must show the same subject as the input. Never add, remove, replace, combine, or reinterpret content. Change only surfaces to matte clay with subtle fingerprints, shallow relief, imperfect edges, and soft contact shadows. No roads, markers, extra windows, devices, borders, or new objects.",
@@ -109,6 +113,7 @@ const state = {
   forwardingWheel: false,
   demoStop: null,
   stats: null,
+  sessionLimitMs: DEFAULT_CLOUD_SESSION_LIMIT_MS,
 };
 
 let sourceStream = null;
@@ -153,6 +158,7 @@ function applyRuntime(mode, { announce = true } = {}) {
   runtimeSelect.value = state.mode;
   runtimeBadge.classList.remove("is-cloud", "is-local");
   accessControl.hidden = state.mode !== "cloud";
+  budgetControl.hidden = state.mode !== "cloud";
 
   if (state.mode === "cloud") {
     captureCanvas.width = FLUX_INPUT_SIZE;
@@ -523,13 +529,18 @@ async function startCloudSession(generation) {
   state.cloudAccessCode = accessCode.value.trim();
   if (!state.cloudAccessCode) throw new Error("Enter your local access code before starting FLUX.2.");
 
+  const sessionLimitMs = normalizeCloudSessionLimit(sessionBudget.value);
+  const sessionSeconds = sessionLimitMs / 1_000;
+  const estimatedCost = estimateCloudSessionCost(sessionLimitMs).toFixed(2);
+  state.sessionLimitMs = sessionLimitMs;
+  sessionBudget.disabled = true;
   const startedAt = performance.now();
-  const deadlineAt = startedAt + CLOUD_SESSION_LIMIT_MS;
+  const deadlineAt = startedAt + sessionLimitMs;
   state.stats = freshStats(startedAt);
   performanceBadge.hidden = false;
   performanceBadge.textContent = "warming FLUX.2";
   outputStatus.textContent = "connecting to FLUX.2";
-  setMessage("Authorizing one bounded FLUX.2 session. Frames are processed by fal.ai.");
+  setMessage(`Authorizing up to ${sessionSeconds} seconds of FLUX.2 (about $${estimatedCost} at the listed rate).`);
   falSocketGuard ||= installFalSocketGuard(window);
   const { fal } = await import(FAL_CLIENT_URL);
   if (!isCurrentRun(generation)) return;
@@ -541,7 +552,7 @@ async function startCloudSession(generation) {
   };
 
   state.cloudConnection = fal.realtime.connect(FAL_MODEL, {
-    connectionKey: `clay-screen-${generation}-${crypto.randomUUID()}`,
+    connectionKey: `surfaceshift-${generation}-${crypto.randomUUID()}`,
     tokenProvider: provideToken,
     throttleInterval: 0,
     maxBuffering: 1,
@@ -571,7 +582,7 @@ async function startCloudSession(generation) {
       }));
     },
     onDeadline: () => {
-      if (isCurrentRun(generation)) stopTransform("The 15-second cloud session ended to keep usage bounded.");
+      if (isCurrentRun(generation)) stopTransform(`The ${sessionSeconds}-second cloud session ended at its selected limit.`);
     },
     onError: (error) => handleCloudError(error, generation),
   });
@@ -582,8 +593,8 @@ async function startCloudSession(generation) {
     }
   }, CLOUD_STARTUP_TIMEOUT_MS);
   state.sessionTimer = setTimeout(() => {
-    if (isCurrentRun(generation)) stopTransform("The 15-second cloud session ended to keep usage bounded.");
-  }, CLOUD_SESSION_LIMIT_MS);
+    if (isCurrentRun(generation)) stopTransform(`The ${sessionSeconds}-second cloud session ended at its selected limit.`);
+  }, sessionLimitMs);
   state.cloudPump.start({ generation, deadlineAt });
 }
 
@@ -876,6 +887,7 @@ async function startTransform() {
     state.recordingArmed = null;
     state.displayFrame = null;
     recordingMode.disabled = false;
+    sessionBudget.disabled = false;
     resetMatchedPair();
     state.latestOutputBatch = null;
     state.outputBusy = false;
@@ -917,6 +929,7 @@ function stopTransform(message = "Transformation stopped.", tone = "normal", { s
   state.cloudAccessCode = "";
   state.recordingArmed = null;
   recordingMode.disabled = false;
+  sessionBudget.disabled = false;
   state.cloudPump?.stop();
   state.cloudPump = null;
   state.latestOutputBatch = null;
@@ -984,11 +997,20 @@ async function toggleWheelForwarding() {
   }
 }
 
-function setShowcase(enabled) {
+async function setShowcase(enabled) {
+  if (enabled && outputFrame.requestFullscreen && document.fullscreenElement !== outputFrame) {
+    try {
+      await outputFrame.requestFullscreen({ navigationUI: "hide" });
+    } catch {
+      // The CSS presentation mode remains available when native fullscreen is blocked.
+    }
+  } else if (!enabled && document.fullscreenElement) {
+    await document.exitFullscreen().catch(() => {});
+  }
   studio.classList.toggle("is-showcase", enabled);
   document.body.classList.toggle("has-showcase", enabled);
   showcaseButton.setAttribute("aria-pressed", String(enabled));
-  showcaseButton.textContent = enabled ? "Exit showcase" : "Showcase";
+  showcaseButton.textContent = enabled ? "Exit fullscreen" : "Fullscreen output";
   exitShowcaseButton.hidden = !enabled;
 }
 
@@ -1164,7 +1186,7 @@ function drawOutputRecordingFrame() {
   recordingContext.font = "600 16px 'DM Mono', monospace";
   recordingContext.textAlign = "left";
   recordingContext.textBaseline = "middle";
-  recordingContext.fillText("●  CLAY SCREEN / LIVE", 94, 95);
+  recordingContext.fillText("●  SURFACESHIFT / LIVE", 94, 95);
 }
 
 function drawRecordingFrame(recording) {
@@ -1214,7 +1236,7 @@ function startRecording() {
     const armedMessage = preset.mode === "audit" || preset.mode === "compare"
       ? "Exact-pair audit armed. It will begin on the first native source/result pair."
       : preset.mode === "live"
-        ? "Live compare armed. It will begin on the first displayed generated frame."
+        ? "Compare recording armed. It will begin on the first displayed generated frame."
         : "Output recording armed. It will begin on the first generated frame.";
     setMessage(armedMessage);
     return;
@@ -1279,11 +1301,11 @@ function beginRecording(mode) {
       const url = URL.createObjectURL(output);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `clay-screen-${recording.mode}-${Date.now()}.${extension}`;
+      link.download = `surfaceshift-${recording.mode}-${Date.now()}.${extension}`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       const savedMessage = recording.mode === "live"
-        ? "1920×1080 live compare saved with the smooth displayed output."
+        ? "1920×1080 Compare recording saved with the smooth displayed output."
         : recording.mode === "audit" || recording.mode === "compare"
           ? "1920×1080 exact-pair audit saved. Native holds are expected in this mode."
           : "1080×1080 output recording saved with a 30 fps presentation target.";
@@ -1316,10 +1338,10 @@ function beginRecording(mode) {
   }
   recording.renderTimer = setInterval(() => drawRecordingFrame(recording), 1000 / 30);
   const startedMessage = recording.mode === "live"
-    ? "Recording the moving source and the same interpolated output shown live."
+    ? "Compare is recording the moving source and the same interpolated output shown live."
     : recording.mode === "audit" || recording.mode === "compare"
-      ? "Recording exact native source/result pairs for auditing."
-      : "Recording the clean 1080×1080 generated stage.";
+      ? "Lab is recording exact native source/result pairs for auditing."
+      : "Create is recording the clean 1080×1080 generated stage.";
   setMessage(startedMessage);
 }
 
@@ -1403,6 +1425,9 @@ recordButton.addEventListener("click", startRecording);
 scrollButton.addEventListener("click", toggleWheelForwarding);
 showcaseButton.addEventListener("click", () => setShowcase(!studio.classList.contains("is-showcase")));
 exitShowcaseButton.addEventListener("click", () => setShowcase(false));
+document.addEventListener("fullscreenchange", () => {
+  if (!document.fullscreenElement && studio.classList.contains("is-showcase")) setShowcase(false);
+});
 stopSharingButton.addEventListener("click", () => stopAll());
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && studio.classList.contains("is-showcase")) setShowcase(false);

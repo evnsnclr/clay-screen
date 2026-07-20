@@ -7,9 +7,11 @@ import {
   CLOUD_PENDING_LIMIT,
   CLOUD_PENDING_TTL_MS,
   CLOUD_STARTUP_TIMEOUT_MS,
-  CLOUD_SESSION_LIMIT_MS,
+  CLOUD_SESSION_LIMITS,
   FAL_CLIENT_URL,
   FAL_MODEL,
+  DEFAULT_CLOUD_SESSION_LIMIT_MS,
+  FAL_PRICE_PER_SECOND,
   FLUX_INPUT_SIZE,
   FLUX_JPEG_QUALITY,
   FLUX_OUTPUT_SIZE,
@@ -17,6 +19,8 @@ import {
   buildFluxInput,
   buildRecordingOptions,
   chooseRuntime,
+  estimateCloudSessionCost,
+  normalizeCloudSessionLimit,
 } from "../static/flux-config.js";
 import {
   containRect,
@@ -61,9 +65,9 @@ test("recording presets keep showcase and audit landscape while output stays squ
     mode: "live",
     width: 1920,
     height: 1080,
-    label: "Live compare · smooth",
+    label: "Compare · live source + output",
   });
-  assert.equal(recordingPreset("audit").label, "Exact pairs · audit");
+  assert.equal(recordingPreset("audit").label, "Lab · exact native pairs");
   assert.equal(recordingPreset("compare").mode, "compare");
   assert.equal(recordingPreset("output").width, 1080);
   assert.equal(recordingPreset("output").height, 1080);
@@ -135,7 +139,9 @@ test("FLUX request uses the documented realtime settings", () => {
   assert.equal(CLOUD_PENDING_LIMIT, 16);
   assert.equal(CLOUD_PENDING_TTL_MS, 5_000);
   assert.equal(CLOUD_STARTUP_TIMEOUT_MS, 10_000);
-  assert.equal(CLOUD_SESSION_LIMIT_MS, 15_000);
+  assert.deepEqual(CLOUD_SESSION_LIMITS, [15_000, 45_000, 90_000]);
+  assert.equal(DEFAULT_CLOUD_SESSION_LIMIT_MS, 45_000);
+  assert.equal(FAL_PRICE_PER_SECOND, 0.00194);
   assert.deepEqual(request, {
     image_url: "data:image/jpeg;base64,frame",
     prompt: "handmade clay",
@@ -147,6 +153,14 @@ test("FLUX request uses the documented realtime settings", () => {
     enable_interpolation: true,
     output_feedback_strength: 0.95,
   });
+});
+
+test("cloud session budgets accept only bounded presets and expose the estimate", () => {
+  assert.equal(normalizeCloudSessionLimit("15000"), 15_000);
+  assert.equal(normalizeCloudSessionLimit(90_000), 90_000);
+  assert.equal(normalizeCloudSessionLimit(999_999), 45_000);
+  assert.equal(estimateCloudSessionCost(15_000), 0.0291);
+  assert.equal(estimateCloudSessionCost(45_000), 0.0873);
 });
 
 test("FLUX request rejects incomplete input", () => {

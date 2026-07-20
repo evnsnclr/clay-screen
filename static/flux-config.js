@@ -9,7 +9,20 @@ export const CLOUD_CAPTURE_INTERVAL_MS = 100;
 export const CLOUD_PENDING_LIMIT = 16;
 export const CLOUD_PENDING_TTL_MS = 5_000;
 export const CLOUD_STARTUP_TIMEOUT_MS = 10_000;
-export const CLOUD_SESSION_LIMIT_MS = 15_000;
+export const FAL_PRICE_PER_SECOND = 0.00194;
+export const CLOUD_SESSION_LIMITS = Object.freeze([15_000, 45_000, 90_000]);
+export const DEFAULT_CLOUD_SESSION_LIMIT_MS = 45_000;
+
+export function normalizeCloudSessionLimit(value) {
+  const milliseconds = Number(value);
+  return CLOUD_SESSION_LIMITS.includes(milliseconds)
+    ? milliseconds
+    : DEFAULT_CLOUD_SESSION_LIMIT_MS;
+}
+
+export function estimateCloudSessionCost(milliseconds) {
+  return (normalizeCloudSessionLimit(milliseconds) / 1_000) * FAL_PRICE_PER_SECOND;
+}
 
 export function chooseRuntime(health = {}) {
   const runtimes = health.runtimes || {};

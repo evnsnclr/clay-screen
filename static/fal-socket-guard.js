@@ -18,7 +18,7 @@ export function installFalSocketGuard(host = globalThis) {
   const sockets = new Set();
   const closeSocket = (socket) => {
     try {
-      socket.close(1000, "Clay Screen stopped");
+      socket.close(1000, "SurfaceShift stopped");
     } catch {
       // A CONNECTING socket is closed again from its guarded onopen handler.
     }

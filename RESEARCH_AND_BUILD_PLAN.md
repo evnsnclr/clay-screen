@@ -8,10 +8,10 @@ Research updated July 16, 2026.
 shows a browser retaining its structure while every surface becomes tactile
 clay. Ryan later reported
 [using fal at around 20 fps](https://x.com/Ryan__Stephen/status/2066903429881208975).
-The post does not publish its complete source or settings, so Clay Screen is an
+The post does not publish its complete source or settings, so SurfaceShift is an
 independent implementation.
 
-Clay Screen uses
+SurfaceShift uses
 [`fal-ai/flux-2/klein/realtime`](https://fal.ai/models/fal-ai/flux-2/klein/realtime/api).
 The endpoint accepts an optimized 704×704 JPEG input at 50% quality, supports a
 fixed seed and output feedback, and can return a RIFE interpolation frame plus
@@ -39,7 +39,7 @@ direct fal realtime WebSocket
         ▼
 evenly paced 768×768 output
         ├─ live diagnostics
-        ├─ Showcase mode
+        ├─ Fullscreen output mode
         └─ 1080×1080 / 30 fps recording compositor
 
 localhost FastAPI
@@ -94,7 +94,7 @@ allowed large motion while keeping a coherent clay palette.
 
 Desktop Chrome 136+ provides
 [Captured Surface Control](https://developer.chrome.com/docs/web-platform/captured-surface-control).
-Clay Screen associates a `CaptureController` with `getDisplayMedia()`, checks
+SurfaceShift associates a `CaptureController` with `getDisplayMedia()`, checks
 that the selected surface is a browser tab, and forwards wheel events from the
 generated output to that tab. The app stays foreground, avoiding background-tab
 timer throttling while the user scrolls the source.
@@ -115,8 +115,8 @@ References:
 - Live FLUX.2 runs only from localhost with each user's own ignored key.
 - The exact realtime model is allowlisted server-side.
 - Token and health responses use `Cache-Control: no-store`.
-- A 10-second first-frame timeout and absolute 15-second session deadline close
-  the WebSocket and recording.
+- A 10-second first-frame timeout and selected 15/45/90-second session deadline
+  close the WebSocket and recording.
 - Stop invalidates delayed captures, closes connecting fal sockets, clears
   pending request metadata, and prevents trailing sends.
 - The local access code is a safety gate, not authentication or a hard budget.
@@ -135,7 +135,7 @@ updated on July 18 to a separate 22.89-second, 1920×1080 live-compare edit; its
 purpose is presentation, while the retained take remains the measurement
 artifact.
 
-The clean framing and output-only recording improve on the failed capture and
+The clean framing and Create recording improve on the failed capture and
 avoid exposing the user's whole desktop. Ryan's original still has finer map
 detail and a substantially higher reported generated cadence. Reaching true
 20 fps would require faster inference capacity or a different local/hosted
